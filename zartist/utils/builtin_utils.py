@@ -9,6 +9,7 @@ from zartist.errors import StrParseError
 
 
 def fn_timer(n_repeats=1):
+
     def decorate(func=None):
 
         @wraps(func)
@@ -89,5 +90,4 @@ def normalize_text(s: str) -> str:
 
 
 if __name__ == "__main__":
-    s = "  {'a': {'b':[1,2,3]}} "
-    print(str2dict(s))
+    print(str2dict(""))

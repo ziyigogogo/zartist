@@ -8,10 +8,30 @@ from PIL import Image, ImageDraw, ImageFont, ImageColor
 
 # Define color palette
 COLORS = [
-             'red', 'green', 'blue', 'yellow', 'orange', 'pink', 'purple', 'brown', 'gray',
-             'beige', 'turquoise', 'cyan', 'magenta', 'lime', 'navy', 'maroon', 'teal',
-             'olive', 'coral', 'lavender', 'violet', 'gold', 'silver',
-         ] + [colorname for (colorname, _) in ImageColor.colormap.items()]
+    'red',
+    'green',
+    'blue',
+    'yellow',
+    'orange',
+    'pink',
+    'purple',
+    'brown',
+    'gray',
+    'beige',
+    'turquoise',
+    'cyan',
+    'magenta',
+    'lime',
+    'navy',
+    'maroon',
+    'teal',
+    'olive',
+    'coral',
+    'lavender',
+    'violet',
+    'gold',
+    'silver',
+] + [colorname for (colorname, _) in ImageColor.colormap.items()]
 
 
 def parse_json_output(json_output: str) -> str:
@@ -30,19 +50,17 @@ def parse_json_output(json_output: str) -> str:
             json_output = "\n".join(lines[i + 1:])
             json_output = json_output.split("```")[0]
             break
-    return json_output
+    return json_output.strip()
 
 
-def draw_bounding_boxes(
-        image: Image.Image,
-        bounding_boxes: str,
-        input_width: int,
-        input_height: int,
-        font_path: str = "NotoSansCJK-Regular.ttc",
-        font_size: int = 14,
-        line_width: int = 4,
-        show: bool = True
-) -> Image.Image:
+def draw_bounding_boxes(image: Image.Image,
+                        bounding_boxes: str,
+                        input_width: int,
+                        input_height: int,
+                        font_path: str = "NotoSansCJK-Regular.ttc",
+                        font_size: int = 14,
+                        line_width: int = 4,
+                        show: bool = True) -> Image.Image:
     """
     Draw bounding boxes on an image with labels.
     
@@ -96,3 +114,10 @@ def draw_bounding_boxes(
     if show:
         image.show()
     return image
+
+
+if __name__ == "__main__":
+    json_str = '''```json
+    {"key": "value"}
+    ```'''
+    print(parse_json_output(json_str))
