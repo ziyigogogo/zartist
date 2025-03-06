@@ -1,7 +1,7 @@
-from typing import Dict, List, Union
 import os
-from dotenv import load_dotenv
+from typing import Dict, List, Union
 
+from dotenv import load_dotenv
 from openai import OpenAI
 
 from zartist.base.client import BaseLLMClient
@@ -11,8 +11,10 @@ from zartist.utils.image_utils import process_image_reprs
 # Load environment variables
 load_dotenv()
 
+
 class OpenAIQwenVLClient(BaseLLMClient):
     """Client for making requests to Qwen VL model"""
+
     # api parameters
     model: str = "qwen-vl-max-2025-01-25"
     client = OpenAI(
@@ -29,11 +31,11 @@ class OpenAIQwenVLClient(BaseLLMClient):
     max_pixels: int = 512 * 28 * 28
 
     def build_messages(
-            self,
-            prompt: str,
-            valid_images: list[str],
-            history: [dict] = None,
-            system_prompt: str = "You are a helpful assistant.",
+        self,
+        prompt: str,
+        valid_images: list[str],
+        history: [dict] = None,
+        system_prompt: str = "You are a helpful assistant.",
     ) -> [dict]:
         """
         Build messages from prompt and history.
@@ -48,7 +50,7 @@ class OpenAIQwenVLClient(BaseLLMClient):
         """
         # Prepare messages
         messages = [{"role": "system", "content": system_prompt}]
-        if history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history):
+        if (history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history)):
             # Check if there's a system message at the beginning
             if history[0].get("role", "") == "system":
                 messages = history
@@ -62,9 +64,10 @@ class OpenAIQwenVLClient(BaseLLMClient):
                 "type": "image_url",
                 "min_pixels": self.min_pixels,
                 "max_pixels": self.max_pixels,
-                "image_url": {"url": image},
+                "image_url": {
+                    "url": image
+                }
             })
-        content.append({"type": "text", "text": prompt})
         messages.append({"role": "user", "content": content})
 
         return messages
@@ -124,22 +127,21 @@ class OpenAIQwenVLClient(BaseLLMClient):
         Returns:
             A formatted string with the cost breakdown
         """
-        prompt_tokens = usage['prompt_tokens']
-        completion_tokens = usage['completion_tokens']
+        prompt_tokens = usage["prompt_tokens"]
+        completion_tokens = usage["completion_tokens"]
         prompt_cost = prompt_tokens * self.prompt_price / 1000
         completion_cost = completion_tokens * self.completion_price / 1000
         total_cost = prompt_cost + completion_cost
         print(
-            f"Prompt cost: ¥{prompt_cost:.4f}, Completion cost: ¥{completion_cost:.4f}, Total cost: ¥{total_cost:.4f}"
-        )
+            f"Prompt cost: ¥{prompt_cost:.4f}, Completion cost: ¥{completion_cost:.4f}, Total cost: ¥{total_cost:.4f}")
 
     @fn_timer
     def query(
-            self,
-            prompt: str,
-            image_reprs: Union[str, List[str]],
-            history: [dict] = None,
-            **kwargs
+        self,
+        prompt: str,
+        image_reprs: Union[str, List[str]],
+        history: [dict] = None,
+        **kwargs,
     ) -> str:
         """
         Analyze images using Qwen VL model.
@@ -160,7 +162,7 @@ class OpenAIQwenVLClient(BaseLLMClient):
 
 if __name__ == "__main__":
     client = OpenAIQwenVLClient()
-
+    a = """111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"""
     llm_resp = client.query(
         prompt="图中画了什么？最有可能的地点在世界上的哪个国家的哪个景区？",
         image_reprs="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg",
