@@ -1,29 +1,27 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
-
 
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
     @abstractmethod
-    def build_messages(self, prompt: str, history: Optional[List[Dict]] = None) -> List[Dict]:
+    def build_messages(self, prompt: str, history: list[dict] | None = None) -> list[dict]:
         """Build messages from prompt and history"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def build_request(self, messages: List[Dict]) -> Dict:
+    def build_request(self, messages: list[dict]) -> dict:
         """Build request payload for specific backend"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def send_request(self, request: Dict) -> Dict:
+    def send_request(self, request: dict) -> dict:
         """Send request to LLM backend and get response"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def parse_answer(self, response: Dict) -> str:
+    def parse_answer(self, response: dict) -> str:
         """Parse LLM response to get answer text"""
-        pass
+        raise NotImplementedError
 
     def query(self, *args, **kwargs):
         messages = self.build_messages(*args, **kwargs)
