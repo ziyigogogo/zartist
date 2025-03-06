@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 

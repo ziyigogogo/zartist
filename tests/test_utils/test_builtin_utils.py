@@ -1,6 +1,6 @@
 import pytest
 
-from zartist.utils.builtin_utils import fn_timer, str2dict, normalize_text
+from zartist.utils.builtin_utils import fn_timer, str2dict, clean_text
 from zartist.errors import StrParseError
 
 
@@ -37,15 +37,15 @@ def test_str2dict_invalid():
 def test_normalize_text():
     """Test normalize_text function"""
     # Test basic whitespace normalization
-    assert normalize_text("  hello   world  ") == "hello world"
+    assert clean_text("  hello   world  ") == "hello world"
     # Test newlines and tabs
-    assert normalize_text("hello\nworld\t!") == "hello world !"
+    assert clean_text("hello\nworld\t!") == "hello world !"
     # Test multiple spaces between words
-    assert normalize_text("hello     world") == "hello world"
+    assert clean_text("hello     world") == "hello world"
     # Test empty string
-    assert normalize_text("") == ""
+    assert clean_text("") == ""
     # Test string with only whitespace
-    assert normalize_text("   ") == ""
+    assert clean_text("   ") == ""
 
 
 def test_fn_timer():

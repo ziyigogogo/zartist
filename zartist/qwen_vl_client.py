@@ -1,9 +1,10 @@
 import os
+from typing import Dict, List, Union
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from zartist.abc.base_client import BaseLLMClient
+from zartist.base.client import BaseLLMClient
 from zartist.utils.builtin_utils import fn_timer, clean_text
 from zartist.utils.image_utils import process_image_reprs
 
@@ -33,9 +34,9 @@ class OpenAIQwenVLClient(BaseLLMClient):
         self,
         prompt: str,
         valid_images: list[str],
-        history: list[dict] | None = None,
+        history: [dict] = None,
         system_prompt: str = "You are a helpful assistant.",
-    ) -> list[dict]:
+    ) -> [dict]:
         """
         Build messages from prompt and history.
 
@@ -67,12 +68,11 @@ class OpenAIQwenVLClient(BaseLLMClient):
                     "url": image
                 }
             })
-        content.append({"type": "text", "text": prompt})
         messages.append({"role": "user", "content": content})
 
         return messages
 
-    def build_request(self, messages: list[dict]) -> dict:
+    def build_request(self, messages: [dict]) -> dict:
         """
         Build request payload for Qwen VL model.
 
@@ -87,7 +87,7 @@ class OpenAIQwenVLClient(BaseLLMClient):
             "messages": messages,
         }
 
-    def send_request(self, request: dict) -> dict:
+    def send_request(self, request: Dict) -> Dict:
         """
         Send request to Qwen VL model and get response.
 
@@ -101,7 +101,7 @@ class OpenAIQwenVLClient(BaseLLMClient):
             self.client = self.build_client()
         return self.client.chat.completions.create(**request).to_dict()
 
-    def parse_answer(self, response: dict) -> str:
+    def parse_answer(self, response: Dict) -> str:
         """
         Parse Qwen VL model response to get answer text.
 
@@ -117,7 +117,7 @@ class OpenAIQwenVLClient(BaseLLMClient):
         self.print_usage(usage)
         return clean_text(content)
 
-    def print_usage(self, usage: dict) -> str:
+    def print_usage(self, usage: Dict) -> str:
         """
         Calculate and format the cost breakdown for a model response.
 
@@ -139,8 +139,8 @@ class OpenAIQwenVLClient(BaseLLMClient):
     def query(
         self,
         prompt: str,
-        image_reprs: str | list[str],
-        history: list[dict] | None = None,
+        image_reprs: Union[str, List[str]],
+        history: [dict] = None,
         **kwargs,
     ) -> str:
         """
@@ -162,8 +162,10 @@ class OpenAIQwenVLClient(BaseLLMClient):
 
 if __name__ == "__main__":
     client = OpenAIQwenVLClient()
-
-    # Test with a single image
-    response = client.query(prompt="Describe the image in detail.",
-                            image_reprs=r"C:\Users\admin\Desktop\projects\zartist\tests\src\dog_and_girl.jpeg")
-    print("Single image response:", response)
+    a = """111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"""
+    llm_resp = client.query(
+        prompt="图中画了什么？最有可能的地点在世界上的哪个国家的哪个景区？",
+        image_reprs="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg",
+        system_prompt="你是一个嘴巴很贱但是心底善良的贴吧老哥，你会对用户的问题百般抨击，但是最后会得出回答",
+    )
+    print(llm_resp)

@@ -13,9 +13,10 @@ def str2pil(s: str) -> "PIL.Image.Image":
     """从字符串中提取图像对象"""
 
     def load_image(data: bytes) -> "PIL.Image.Image":
-        img = Image.open(io.BytesIO(data))
-        img.verify()
-        return img
+        buffer = io.BytesIO(data)
+        img = Image.open(buffer)
+        img.verify()  # Verify it's an image
+        return Image.open(buffer)  # Reopen the image
 
     try:
         match s:
@@ -44,7 +45,6 @@ def pil2b64(img: "PIL.Image.Image", format: str = "PNG") -> str:
     """
     if not isinstance(img, Image.Image):
         raise TypeError("Input must be a PIL Image object")
-
     buffered = io.BytesIO()
     img.save(buffered, format=format)
     img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -81,6 +81,7 @@ def process_image_reprs(image_reprs: Union[str, List[str]], keep_url: bool = Tru
             if not (keep_url and img_str.startswith(('http://', 'https://'))):
                 img_str = pil2b64(str2pil(img_str))
             valid_images.append(img_str)
-        except Exception:
+        except Exception as e:
+            print(f"Error processing image: {e}, type: {type(e)}")
             continue
     return valid_images

@@ -75,7 +75,7 @@ def str2dict(s: str):
         return greedy_s2d(s)
 
 
-def normalize_text(s: str) -> str:
+def clean_text(s: str) -> str:
     """
     Normalize text by stripping whitespace and replacing all internal whitespace with a single space.
 
