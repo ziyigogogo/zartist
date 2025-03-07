@@ -6,10 +6,6 @@ from zartist.utils.builtin_utils import clean_text
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
-    @property
-    def client(self):
-        raise NotImplementedError
-
     @abstractmethod
     def build_messages(self, prompt: str, history: list[dict] | None = None) -> list[dict]:
         """Build messages from prompt and history"""
