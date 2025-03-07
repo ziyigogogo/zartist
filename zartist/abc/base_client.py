@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from zartist.utils.builtin_utils import clean_text
-
+from zartist import logger
 
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
@@ -68,7 +68,7 @@ class OpenAIClient(BaseLLMClient):
         prompt_cost = prompt_tokens * self.prompt_price / 1000
         completion_cost = completion_tokens * self.completion_price / 1000
         total_cost = prompt_cost + completion_cost
-        print(f"Prompt: ¥{prompt_cost:.4f}, Completion: ¥{completion_cost:.4f}, Total: ¥{total_cost:.4f}")
+        logger.info(f"Prompt: ¥{prompt_cost:.4f}, Completion: ¥{completion_cost:.4f}, Total: ¥{total_cost:.4f}")
 
     def parse_answer(self, response: dict) -> str:
         self.usage_summary(response["usage"])

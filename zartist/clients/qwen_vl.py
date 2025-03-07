@@ -1,12 +1,11 @@
 import os
+import logging
 
 from dotenv import load_dotenv
 
+from zartist import logger
 from zartist.abc.base_client import OpenAIClient
 from zartist.utils.image_utils import process_image_reprs
-
-# Load environment variables
-load_dotenv()
 
 
 class AliQwenVLClient(OpenAIClient):
@@ -61,4 +60,4 @@ if __name__ == "__main__":
         image_reprs=image_reprs,
         system_prompt="你是一个嘴巴很贱但是心底善良的贴吧老哥，你会对用户的问题百般抨击，但是最后会得出回答",
     )
-    print(llm_resp)
+    logger.debug(llm_resp)

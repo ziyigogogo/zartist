@@ -19,8 +19,7 @@ def str2df(s: str) -> "pandas.DataFrame":
                     case 'csv':
                         return pd.read_csv(s, encoding=encoding)
                     case _:
-                        raise TypeError(
-                            f"Unsupported file extension: {file_ext}")
+                        raise TypeError(f"Unsupported file extension: {file_ext}")
             except UnicodeDecodeError:
                 continue
         raise TypeError(f"Failed to parse DataFrame in any encoding")

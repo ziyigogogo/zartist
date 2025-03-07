@@ -2,8 +2,8 @@ from ast import literal_eval
 from functools import wraps
 import json
 import time
-
 import regex
+from zartist import logger
 
 from zartist.errors import StrParseError
 
@@ -23,7 +23,7 @@ def fn_timer(n_repeats=1):
                 total_time += toc - tic
             avg_time = total_time / n_repeats
             info = f"{func.__qualname__} - average execution time over {n_repeats} run(s): {avg_time:.6f} seconds"
-            print(info)
+            logger.info(info)
             return result
 
         return wrapper
@@ -76,18 +76,9 @@ def str2dict(s: str):
 
 
 def clean_text(s: str) -> str:
-    """
-    Normalize text by stripping whitespace and replacing all internal whitespace with a single space.
-
-    Args:
-        s: Input string
-
-    Returns:
-        Normalized string with consistent whitespace
-    """
     # Strip leading/trailing whitespace and replace all internal whitespace with single space
     return ' '.join(s.strip().split())
 
 
 if __name__ == "__main__":
-    print(str2dict(""))
+    logger.info(str2dict("123123 {\"a\": {\"b\": [1,2,3,{\"c\": 4}]}}"))

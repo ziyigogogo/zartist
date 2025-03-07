@@ -1,5 +1,5 @@
 from ast import literal_eval
-
+from zartist import logger
 from zartist.errors import StrParseError
 from zartist.utils.builtin_utils import str2dict
 from zartist.utils.image_utils import str2pil
@@ -34,5 +34,5 @@ def str2obj(s: str, target_type="auto"):
 
 
 if __name__ == "__main__":
-    a = str2obj("{'A':\"B\"}")
-    print(a)
+    a = str2obj("123123 {\"a\": {\"b\": [1,2,3,{\"c\": 4}]}}")
+    logger.info(a)

@@ -3,8 +3,12 @@ Visualization utilities for displaying bounding boxes, points, and other annotat
 """
 
 import ast
+import json
+from typing import Dict, List, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont, ImageColor
+
+from zartist import logger
 
 # Define color palette
 COLORS = [
@@ -120,4 +124,5 @@ if __name__ == "__main__":
     json_str = '''```json
     {"key": "value"}
     ```'''
-    print(parse_json_output(json_str))
+    if json_str:
+        logger.info(parse_json_output(json_str))

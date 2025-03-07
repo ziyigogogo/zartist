@@ -7,6 +7,7 @@ import requests
 from PIL import Image
 
 from zartist.errors import StrParseError
+from zartist import logger
 
 
 def str2pil(s: str) -> "PIL.Image.Image":
@@ -65,23 +66,16 @@ def process_image_reprs(image_reprs: Union[str, List[str]], keep_url: bool = Tru
     Returns:
         List of valid image URLs or base64 strings
     """
-    # Convert single string to list for consistency
     if isinstance(image_reprs, str):
         image_reprs = [image_reprs]
 
     valid_images = []
-    for img_str in image_reprs:
-        # Handle base64 strings
-        if img_str.startswith('data:image/'):
-            valid_images.append(img_str)
-            continue
-
-        # Convert to base64 for local paths or when keep_url=False
+    for s in image_reprs:
         try:
-            if not (keep_url and img_str.startswith(('http://', 'https://'))):
-                img_str = pil2b64(str2pil(img_str))
-            valid_images.append(img_str)
+            if not (keep_url and s.startswith(('http://', 'https://'))):
+                s = pil2b64(str2pil(s))
+            valid_images.append(s)
         except Exception as e:
-            print(f"Error processing image: {e}, type: {type(e)}")
+            logger.error(f"Error processing image: {e}, type: {type(e)}")
             continue
     return valid_images
