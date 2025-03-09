@@ -23,7 +23,7 @@ def fn_timer(n_repeats=1):
                 total_time += toc - tic
             avg_time = total_time / n_repeats
             info = f"{func.__qualname__} - average execution time over {n_repeats} run(s): {avg_time:.6f} seconds"
-            logger.info(info)
+            logger.debug(info)
             return result
 
         return wrapper

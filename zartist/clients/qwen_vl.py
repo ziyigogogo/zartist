@@ -1,39 +1,37 @@
 import os
-import logging
-
-from dotenv import load_dotenv
 
 from zartist import logger
 from zartist.abc.base_client import OpenAIClient
 from zartist.utils.image_utils import process_image_reprs
 
 
-class AliQwenVLClient(OpenAIClient):
+class QwenVLClient(OpenAIClient):
     """Client for making requests to Qwen VL Max model"""
 
     model = "qwen-vl-max-2025-01-25"
     api_key = os.getenv("ALIYUN_API_KEY")
     base_url = os.getenv("ALIYUN_BASE_URL")
 
+    # request parameters
+    min_pixels: int = 256 * 256
+    max_pixels: int = 1024 * 1024
+
     # ¥ per 1000 tokens
     prompt_price: float = 0.003
     completion_price: float = 0.009
 
-    # request parameters
-    min_pixels: int = 128 * 28 * 28
-    max_pixels: int = 512 * 28 * 28
+    default_system_prompt = "You are a helpful assistant."
 
-    def build_messages(self, prompt, image_reprs, history=None, system_prompt="You are a helpful assistant."):
-        # Prepare messages
-        messages = [{"role": "system", "content": system_prompt}]
+    def build_messages(self, prompt, image_reprs, history=None, system_prompt=None):
+        # load history
+        messages = [{"role": "system", "content": system_prompt or self.default_system_prompt}]
         if (history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history)):
-            # Check if there's a system message at the beginning
             if history[0].get("role", "") == "system":
                 messages = history
             else:
                 messages += history
 
-        # Add images and prompt in a single user message
+        # load image
         content = []
         for image in process_image_reprs(image_reprs):
             content.append({
@@ -44,13 +42,16 @@ class AliQwenVLClient(OpenAIClient):
                     "url": image
                 }
             })
+
+        # load prompt
         content.append({"type": "text", "text": prompt})
         messages.append({"role": "user", "content": content})
+
         return messages
 
 
 if __name__ == "__main__":
-    client = AliQwenVLClient()
+    client = QwenVLClient()
 
     image_reprs = "https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg"
 

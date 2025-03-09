@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from zartist.utils.builtin_utils import clean_text
 from zartist import logger
 
+
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
