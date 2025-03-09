@@ -7,6 +7,8 @@ from zartist import logger
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
+    default_system_prompt = "You are a helpful assistant."
+
     @abstractmethod
     def build_messages(self, prompt: str, history: list[dict] | None = None) -> list[dict]:
         """Build messages from prompt and history"""
@@ -49,6 +51,19 @@ class OpenAIClient(BaseLLMClient):
             from openai import OpenAI
             self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         return self._client
+
+    def build_messages(self, prompt, history=None, system_prompt=None):
+        # load history
+        messages = [{"role": "system", "content": system_prompt or self.default_system_prompt}]
+        if (history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history)):
+            if history[0].get("role", "") == "system":
+                messages = history
+            else:
+                messages += history
+        # load prompt
+        messages.append({"role": "user", "content": [{"type": "text", "text": prompt}]})
+
+        return messages
 
     def build_request(self, messages: list[dict]) -> dict:
         return {"model": self.model, "messages": messages}
