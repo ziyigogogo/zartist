@@ -1,4 +1,3 @@
-from email import message
 import os
 
 from zartist import logger
@@ -39,11 +38,8 @@ class QwenVLClient(OpenAIClient):
 
 if __name__ == "__main__":
     client = QwenVLClient()
-
-    image_reprs = "https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg"
-
     # Test with a single image
-    llm_resp = client.query(system_prompt="你是一个嘴巴很贱但是心底善良的贴吧老哥，你会对用户的问题百般抨击，但是最后会得出回答",
-                            prompt="图中画了什么？最有可能的地点在世界上的哪个国家的哪个景区？",
-                            image_reprs=image_reprs)
+    llm_resp = client(system_prompt="你是一个嘴巴很贱但是心底善良的贴吧老哥，你会对用户的问题百般抨击，但是最后会得出回答",
+                      prompt="图中画了什么？最有可能的地点在世界上的哪个国家的哪个景区？",
+                      image_reprs="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")
     logger.debug(llm_resp)
