@@ -10,14 +10,15 @@ from zartist.errors import StrParseError
 from zartist import logger
 
 
+def load_image(data: bytes) -> "PIL.Image.Image":
+    buffer = io.BytesIO(data)
+    img = Image.open(buffer)
+    img.verify()  # Verify it's an image
+    return Image.open(buffer)  # Reopen the image
+
+
 def str2pil(s: str) -> "PIL.Image.Image":
     """从字符串中提取图像对象"""
-
-    def load_image(data: bytes) -> "PIL.Image.Image":
-        buffer = io.BytesIO(data)
-        img = Image.open(buffer)
-        img.verify()  # Verify it's an image
-        return Image.open(buffer)  # Reopen the image
 
     try:
         match s:

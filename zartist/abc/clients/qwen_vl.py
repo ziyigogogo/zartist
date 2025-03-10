@@ -1,11 +1,11 @@
 import os
 
 from zartist import logger
-from zartist.abc.base_client import OpenAIClient
+from zartist.abc.clients import OpenAILLMClient
 from zartist.utils.image_utils import process_image_reprs
 
 
-class QwenVLClient(OpenAIClient):
+class QwenVLClient(OpenAILLMClient):
     """Client for making requests to Qwen VL Max model"""
 
     model = "qwen-vl-max-2025-01-25"
@@ -32,7 +32,7 @@ class QwenVLClient(OpenAIClient):
                     "url": image
                 }
             })
-        logger.debug(f"messages: {messages}")
+        # logger.debug(f"messages: {messages}")
         return messages
 
 

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-from zartist.utils.builtin_utils import clean_text
 from zartist import logger
 
 
@@ -8,6 +7,11 @@ class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
     default_system_prompt = "You are a helpful assistant."
+
+    @abstractmethod
+    def build_client(self) -> object:
+        """Build client for specific backend"""
+        raise NotImplementedError
 
     @abstractmethod
     def build_messages(self, prompt: str, history: list[dict] | None = None) -> list[dict]:
@@ -25,67 +29,59 @@ class BaseLLMClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse_answer(self, response: dict) -> str:
+    def parse_response(self, response: dict) -> str:
         """Parse LLM response to get answer text"""
         raise NotImplementedError
 
     def query(self, *args, **kwargs):
-        if not hasattr(self, "client"):
-            self.build_client()
+        self.client = self.build_client()
         messages = self.build_messages(*args, **kwargs)
         request = self.build_request(messages)
         response = self.send_request(request)
-        answer = self.parse_answer(response)
-        return answer
+        result = self.parse_response(response)
+        return result
 
     def __call__(self, *args, **kwargs):
         return self.query(*args, **kwargs)
 
 
-class OpenAIClient(BaseLLMClient):
-    """Client for making requests to OpenAI API"""
+class OpenAILLMClient(BaseLLMClient):
+    """Client for making requests to OpenAI format API"""
 
-    @property
-    def client(self):
-        if not hasattr(self, "_client"):
-            from openai import OpenAI
-            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-        return self._client
+    def build_client(self) -> object:
+        if hasattr(self, "client") and self.client:
+            return self.client
+        from openai import OpenAI
+        return OpenAI(api_key=self.api_key, base_url=self.base_url)
 
     def build_messages(self, prompt, history=None, system_prompt=None):
-        # load history
         messages = [{"role": "system", "content": system_prompt or self.default_system_prompt}]
-        if (history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history)):
+        if history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history):
             if history[0].get("role", "") == "system":
                 messages = history
             else:
                 messages += history
-        # load prompt
         messages.append({"role": "user", "content": [{"type": "text", "text": prompt}]})
-
         return messages
 
     def build_request(self, messages: list[dict]) -> dict:
         return {"model": self.model, "messages": messages}
 
     def send_request(self, request: dict) -> dict:
-        return self.client.chat.completions.create(**request).to_dict()
+        return self.client.chat.completions.create(**request)
 
     def usage_summary(self, usage: dict) -> str:
-        """
-        Calculate and format the cost breakdown for a model response.
-        Args:
-            usage: The usage dictionary from the model response
-        Returns:
-            A formatted string with the cost breakdown
-        """
         prompt_tokens = usage["prompt_tokens"]
         completion_tokens = usage["completion_tokens"]
         prompt_cost = prompt_tokens * self.prompt_price / 1000
         completion_cost = completion_tokens * self.completion_price / 1000
         total_cost = prompt_cost + completion_cost
-        logger.info(f"Prompt: ¥{prompt_cost:.4f}, Completion: ¥{completion_cost:.4f}, Total: ¥{total_cost:.4f}")
+        logger.info(
+            f"Prompt({prompt_tokens} tokens): ¥{prompt_cost:.4f}, Completion({completion_tokens} tokens): ¥{completion_cost:.4f}, Total: ¥{total_cost:.4f}"
+        )
 
-    def parse_answer(self, response: dict) -> str:
-        self.usage_summary(response["usage"])
-        return clean_text(response["choices"][0]["message"]["content"])
+    def parse_response(self, response) -> str:
+        dict_resp = response.to_dict()
+        # logger.debug(f"Response: {dict_resp}")
+        self.usage_summary(dict_resp["usage"])
+        return dict_resp["choices"][0]["message"]["content"]

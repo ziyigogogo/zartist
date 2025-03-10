@@ -1,7 +1,7 @@
 from ast import literal_eval
 from zartist import logger
 from zartist.errors import StrParseError
-from zartist.utils.builtin_utils import str2dict
+from zartist.utils.text_utils import str2dict
 from zartist.utils.image_utils import str2pil
 from zartist.utils.pandas_utils import str2df
 
