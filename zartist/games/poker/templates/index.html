@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em Poker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/victory-animation.css') }}">
+    <style>
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        #all-in {
+            background-color: #9c27b0;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="poker-table">
+            <div class="board-cards">
+                <div class="card-placeholder" id="board-1"></div>
+                <div class="card-placeholder" id="board-2"></div>
+                <div class="card-placeholder" id="board-3"></div>
+                <div class="card-placeholder" id="board-4"></div>
+                <div class="card-placeholder" id="board-5"></div>
+            </div>
+            <div class="pot-container">
+                <span>Pot: $</span>
+                <span id="pot-amount">0</span>
+            </div>
+            <div class="players-container">
+                <!-- Players will be dynamically added here -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="game-info">
+                <div>Phase: <span id="current-phase">Not Started</span></div>
+                <div>Current Player: <span id="current-player">-</span></div>
+            </div>
+            <div class="action-buttons">
+                <button id="start-hand">Start Hand</button>
+                <button id="fold">Fold</button>
+                <button id="check">Check</button>
+                <button id="call">Call</button>
+                <div class="raise-controls">
+                    <button id="raise">Raise</button>
+                    <div class="quick-raise-buttons">
+                        <button id="raise-pot-third">1/3 Pot</button>
+                        <button id="raise-pot-half">1/2 Pot</button>
+                        <button id="raise-pot-full">1x Pot</button>
+                    </div>
+                    <div class="raise-slider-container">
+                        <input type="range" id="raise-slider" min="0" max="100" value="0">
+                        <input type="number" id="raise-amount" min="0" step="1" value="0">
+                    </div>
+                </div>
+                <button id="all-in">All In</button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>
