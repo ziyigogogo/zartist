@@ -11,14 +11,8 @@ setup(
     packages=find_packages(),
     python_requires=">=3.10",
     install_requires=[
-        "certifi>=2025.1.31",
-        "numpy>=2.2.3",
-        "openpyxl>=3.1.5",
-        "pandas>=2.2.3",
-        "pillow>=11.1.0",
-        "python-dateutil>=2.9.0",
-        "regex>=2024.11.6",
-        "requests>=2.32.3"
+        "certifi>=2025.1.31", "numpy>=2.2.3", "openpyxl>=3.1.5", "pandas>=2.2.3", "pillow>=11.1.0",
+        "python-dateutil>=2.9.0", "regex>=2024.11.6", "requests>=2.32.3"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

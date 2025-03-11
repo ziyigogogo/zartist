@@ -93,6 +93,28 @@
             background-color: #c0392b;
             transform: scale(1.05);
         }
+        
+        /* Styles for pot display below board */
+        .pot-display {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+        
+        /* Style for current raise amount display */
+        .current-raise-display {
+            margin-top: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        /* Add CSS class to hide elements */
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -130,31 +152,31 @@
                 <div id="board-4" class="card-placeholder"></div>
                 <div id="board-5" class="card-placeholder"></div>
             </div>
+            
+            <!-- Pot display below board container -->
+            <div class="pot-display">
+                <span class="chip-icon">🪙</span> $<span id="pot-amount">0</span>
+            </div>
         </div>
         
         <!-- Game Controls -->
         <div class="game-controls">
-            <div class="game-info">
-                <div class="pot">Pot: $<span id="pot-amount">0</span></div>
-                <div class="phase">Phase: <span id="current-phase">Not Started</span></div>
-                <div class="current-player">Current Player: <span id="current-player">None</span></div>
-            </div>
             
             <div class="game-actions">
                 <button id="start-hand" class="action-button">Start Hand</button>
-                <button id="fold" class="action-button" style="display:none">Fold</button>
-                <button id="check" class="action-button" style="display:none">Check</button>
-                <button id="call" class="action-button" style="display:none">Call</button>
-                <button id="raise" class="action-button" style="display:none">Raise</button>
-                <button id="all-in" class="action-button" style="display:none">All In</button>
-                <input id="raise-amount" type="number" min="0" max="1000" style="display:none">
+                <button id="fold" class="action-button hidden">Fold</button>
+                <button id="check" class="action-button hidden">Check</button>
+                <button id="call" class="action-button hidden">Call</button>
+                <button id="raise" class="action-button hidden">Raise</button>
                 
-                <div class="raise-slider-container" style="display:none">
+                <div class="raise-slider-container hidden">
                     <input id="raise-slider" type="range" min="0" max="1000">
                     <div class="quick-raise-buttons">
                         <button id="raise-pot-third" class="quick-raise-button">1/3 Pot</button>
                         <button id="raise-pot-half" class="quick-raise-button">1/2 Pot</button>
                         <button id="raise-pot-full" class="quick-raise-button">1x Pot</button>
+                        <button id="raise-pot-150" class="quick-raise-button">1.5x Pot</button>
+                        <button id="all-in" class="quick-raise-button all-in-button">All In</button>
                     </div>
                 </div>
             </div>

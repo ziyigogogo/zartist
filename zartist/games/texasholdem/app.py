@@ -25,13 +25,13 @@ def init_game():
     if not game:
         # 使用 player_count 作为 max_players 参数
         game = TexasHoldEm(buyin=500, big_blind=5, small_blind=2, max_players=player_count)
-        
+
         # 初始化玩家状态
         for i in range(player_count):
             game.players[i].chips = 500
             game.players[i].state = PlayerState.IN
             logger.info(f"Player {i} set to IN")
-    
+
     return game
 
 
@@ -140,17 +140,6 @@ def get_game_state():
         global game, player_count
         game = init_game()
         logger.info(f"Getting game state with player_count: {player_count}")
-
-        # Check if current player is outside our player count range
-        if game.current_player is not None and game.current_player >= player_count:
-            logger.warning(
-                f"Current player {game.current_player} is outside player count {player_count}. Adjusting game state.")
-            # Find the first player within our range who is in the game
-            for i in range(player_count):
-                if game.players[i].state not in (PlayerState.OUT, PlayerState.SKIP):
-                    game.current_player = i
-                    logger.info(f"Adjusted current player to {i}")
-                    break
 
         # Special handling for dealer and blind positions in 2-player games
         if player_count == 2:

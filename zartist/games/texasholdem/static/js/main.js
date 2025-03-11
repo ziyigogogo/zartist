@@ -5,15 +5,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const callBtn = document.getElementById('call');
     const raiseBtn = document.getElementById('raise');
     const allInBtn = document.getElementById('all-in');
-    const raiseAmount = document.getElementById('raise-amount');
     const raiseSlider = document.getElementById('raise-slider');
+    const raiseSliderContainer = document.querySelector('.raise-slider-container');
     const raisePotThird = document.getElementById('raise-pot-third');
     const raisePotHalf = document.getElementById('raise-pot-half');
     const raisePotFull = document.getElementById('raise-pot-full');
+    const raisePot150 = document.getElementById('raise-pot-150');
     const potAmount = document.getElementById('pot-amount');
-    const currentPhase = document.getElementById('current-phase');
-    const currentPlayer = document.getElementById('current-player');
-    const playersContainer = document.querySelector('.players-container');
     
     // Player selection elements
     const playerSelectionScreen = document.getElementById('player-selection-screen');
@@ -50,11 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 更新游戏状态显示
                 potAmount.textContent = state.pot;
-                currentPhase.textContent = state.phase;
-                currentPlayer.textContent = state.current_player;
 
                 // 显示/隐藏开始按钮
-                startHandBtn.style.display = state.is_hand_running ? 'none' : 'inline-block';
+                if (state.is_hand_running) {
+                    startHandBtn.classList.add('hidden');
+                } else {
+                    startHandBtn.classList.remove('hidden');
+                }
                 startHandBtn.disabled = state.is_hand_running;
 
                 // 处理当前玩家的动作按钮
@@ -72,28 +72,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Chips to call:', state.chips_to_call);
                     
                     // 显示FOLD按钮
-                    foldBtn.style.display = 'inline-block';
+                    foldBtn.classList.remove('hidden');
                     foldBtn.disabled = false;
 
                     // 根据需要跟注的筹码决定显示CHECK还是CALL
                     if (state.chips_to_call > 0) {
-                        checkBtn.style.display = 'none';
-                        callBtn.style.display = 'inline-block';
+                        checkBtn.classList.add('hidden');
+                        callBtn.classList.remove('hidden');
                         callBtn.textContent = `Call ($${state.chips_to_call})`;
                         callBtn.disabled = false;
                     } else {
-                        checkBtn.style.display = state.available_moves.includes('CHECK') ? 'inline-block' : 'none';
-                        callBtn.style.display = 'none';
+                        if (state.available_moves.includes('CHECK')) {
+                            checkBtn.classList.remove('hidden');
+                        } else {
+                            checkBtn.classList.add('hidden');
+                        }
+                        callBtn.classList.add('hidden');
                         checkBtn.disabled = false;
                     }
 
-                    // 显示RAISE按钮和输入框
+                    // 显示RAISE按钮和滑条
                     const canRaise = state.available_moves.includes('RAISE');
-                    raiseBtn.style.display = canRaise ? 'inline-block' : 'none';
-                    raiseAmount.style.display = canRaise ? 'inline-block' : 'none';
-                    raiseSlider.style.display = canRaise ? 'inline-block' : 'none';
-                    document.querySelector('.quick-raise-buttons').style.display = canRaise ? 'flex' : 'none';
-                    document.querySelector('.raise-slider-container').style.display = canRaise ? 'flex' : 'none';
+                    if (canRaise) {
+                        raiseBtn.classList.remove('hidden');
+                        raiseSliderContainer.classList.remove('hidden');
+                    } else {
+                        raiseBtn.classList.add('hidden');
+                        raiseSliderContainer.classList.add('hidden');
+                    }
                     
                     if (canRaise && state.raise_range) {
                         // 获取当前底池大小和需要跟注的筹码
@@ -105,54 +111,108 @@ document.addEventListener('DOMContentLoaded', () => {
                         // 最大加注额
                         const maxRaise = state.raise_range.max;
                         
-                        // 设置加注范围
-                        raiseAmount.min = minRaise;
-                        raiseAmount.max = maxRaise;
-                        raiseAmount.value = minRaise;
+                        // 在Raise按钮上显示最小加注金额
+                        raiseBtn.textContent = `Raise ($${minRaise})`;
+                        
+                        // 计算有效底池大小（包括跟注额）
+                        const effectivePot = potSize + chipsToCall;
+                        
+                        // 计算原始的底池比例值（不带最小值限制）
+                        const rawPotThirdValue = Math.floor(effectivePot / 3);
+                        const rawPotHalfValue = Math.floor(effectivePot / 2);
+                        const rawPotFullValue = effectivePot;
+                        const rawPot150Value = Math.floor(effectivePot * 1.5);
+                        
+                        // 应用最小值限制得到最终加注金额
+                        const potThirdRaise = Math.max(minRaise, rawPotThirdValue);
+                        const potHalfRaise = Math.max(minRaise, rawPotHalfValue);
+                        const potFullRaise = Math.max(minRaise, rawPotFullValue);
+                        const pot150Raise = Math.max(minRaise, rawPot150Value);
                         
                         // 设置滑动条范围
                         raiseSlider.min = minRaise;
                         raiseSlider.max = maxRaise;
                         raiseSlider.value = minRaise;
                         
-                        // 计算快捷加注按钮的值
-                        const potThirdRaise = Math.max(minRaise, Math.floor(potSize / 3) + chipsToCall);
-                        const potHalfRaise = Math.max(minRaise, Math.floor(potSize / 2) + chipsToCall);
-                        const potFullRaise = Math.max(minRaise, potSize + chipsToCall);
+                        // 更新显示的加注金额
+                        raiseBtn.textContent = `Raise ($${minRaise})`;
                         
-                        // 更新快捷加注按钮文本
+                        // 更新快捷加注按钮文本 - 即使按钮隐藏也更新文本
                         raisePotThird.textContent = `1/3 Pot ($${potThirdRaise})`;
                         raisePotHalf.textContent = `1/2 Pot ($${potHalfRaise})`;
                         raisePotFull.textContent = `1x Pot ($${potFullRaise})`;
+                        raisePot150.textContent = `1.5x Pot ($${pot150Raise})`;
+                        allInBtn.textContent = `All In ($${maxRaise})`;
                         
                         // 存储快捷加注按钮的值
                         raisePotThird.dataset.amount = potThirdRaise;
                         raisePotHalf.dataset.amount = potHalfRaise;
                         raisePotFull.dataset.amount = potFullRaise;
+                        raisePot150.dataset.amount = pot150Raise;
+                        allInBtn.dataset.amount = maxRaise; // 
                         
                         // 如果玩家筹码不足最小加注，禁用加注按钮
                         const playerChips = state.players[state.current_player].stack;
                         const disableRaise = playerChips < minRaise;
                         
                         raiseBtn.disabled = disableRaise;
-                        raiseAmount.disabled = disableRaise;
                         raiseSlider.disabled = disableRaise;
+                        
+                        // 显示/隐藏快捷加注按钮，而不仅是禁用
+                        // 修复逻辑：当原始计算值小于最小加注额时隐藏按钮
+                        // 使用visibility而不是display，这样布局不会变化
+                        const hideThird = rawPotThirdValue < minRaise;
+                        const hideHalf = rawPotHalfValue < minRaise;
+                        const hideFull = rawPotFullValue < minRaise;
+                        const hide150 = rawPot150Value < minRaise;
+                        
+                        if (hideThird) {
+                            raisePotThird.classList.add('hidden');
+                        } else {
+                            raisePotThird.classList.remove('hidden');
+                        }
+                        
+                        if (hideHalf) {
+                            raisePotHalf.classList.add('hidden');
+                        } else {
+                            raisePotHalf.classList.remove('hidden');
+                        }
+                        
+                        if (hideFull) {
+                            raisePotFull.classList.add('hidden');
+                        } else {
+                            raisePotFull.classList.remove('hidden');
+                        }
+                        
+                        if (hide150) {
+                            raisePot150.classList.add('hidden');
+                        } else {
+                            raisePot150.classList.remove('hidden');
+                        }
+                        
+                        // 禁用按钮（如果金额满足显示要求但玩家筹码不足）
                         raisePotThird.disabled = disableRaise || playerChips < potThirdRaise;
                         raisePotHalf.disabled = disableRaise || playerChips < potHalfRaise;
                         raisePotFull.disabled = disableRaise || playerChips < potFullRaise;
+                        raisePot150.disabled = disableRaise || playerChips < pot150Raise;
                     }
-
+                    
                     // 显示ALL IN按钮
-                    allInBtn.style.display = state.available_moves.includes('ALL_IN') ? 'inline-block' : 'none';
-                    allInBtn.disabled = false;
+                    const canAllIn = state.available_moves.includes('ALL_IN');
+                    if (canAllIn) {
+                        allInBtn.classList.remove('hidden');
+                        allInBtn.disabled = false;
+                    } else {
+                        allInBtn.classList.add('hidden');
+                    }
                 } else {
-                    // 如果不是当前玩家，隐藏所有动作按钮
-                    [foldBtn, checkBtn, callBtn, raiseBtn, allInBtn, raiseAmount].forEach(btn => {
-                        if (btn) {
-                            btn.style.display = 'none';
-                            btn.disabled = true;
-                        }
-                    });
+                    // 隐藏所有动作按钮
+                    foldBtn.classList.add('hidden');
+                    checkBtn.classList.add('hidden');
+                    callBtn.classList.add('hidden');
+                    raiseBtn.classList.add('hidden');
+                    raiseSliderContainer.classList.add('hidden');
+                    allInBtn.classList.add('hidden');
                 }
 
                 // 更新牌桌状态
@@ -186,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updatePlayers(players, state) {
         // 清空玩家容器
+        const playersContainer = document.querySelector('.players-container');
         playersContainer.innerHTML = '';
         
         // 获取位置信息
@@ -203,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (player.state === 'OUT') return;
             
             const playerDiv = document.createElement('div');
-            const isCurrentPlayer = player.id === parseInt(currentPlayer.textContent);
+            const isCurrentPlayer = player.id === parseInt(state.current_player);
             playerDiv.className = `player ${isCurrentPlayer ? 'active' : ''}`;
             playerDiv.dataset.playerId = player.id;
             
@@ -232,26 +293,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
-            // 添加位置指示器
+            // 添加位置指示器容器
+            const indicatorsContainer = document.createElement('div');
+            indicatorsContainer.className = 'position-indicators';
+            playerDiv.appendChild(indicatorsContainer);
+            
             if (dealerPosition !== null && dealerPosition === player.id) {
                 const dealerButton = document.createElement('div');
                 dealerButton.className = 'position-indicator dealer-button';
                 dealerButton.textContent = 'D';
-                playerDiv.appendChild(dealerButton);
+                indicatorsContainer.appendChild(dealerButton);
             }
             
             if (smallBlindPosition !== null && smallBlindPosition === player.id) {
                 const sbButton = document.createElement('div');
                 sbButton.className = 'position-indicator small-blind-button';
                 sbButton.textContent = 'SB';
-                playerDiv.appendChild(sbButton);
+                indicatorsContainer.appendChild(sbButton);
             }
             
             if (bigBlindPosition !== null && bigBlindPosition === player.id) {
                 const bbButton = document.createElement('div');
                 bbButton.className = 'position-indicator big-blind-button';
                 bbButton.textContent = 'BB';
-                playerDiv.appendChild(bbButton);
+                indicatorsContainer.appendChild(bbButton);
             }
             
             playersContainer.appendChild(playerDiv);
@@ -406,38 +471,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 事件处理函数
     function takeAction(actionType, amount = null) {
-        const data = {
-            action_type: actionType,
-            amount: amount
-        };
-
+        const requestBody = { action_type: actionType };
+        
+        if (actionType === 'RAISE' && amount !== null) {
+            requestBody.amount = parseInt(amount);
+        }
+        
         fetch('/take_action', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(requestBody)
         })
         .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
-                alert(data.error);
+        .then(result => {
+            if (result.error) {
+                console.error(result.error);
                 return;
             }
             
             // 处理手牌结束
-            if (data.hand_over) {
-                const winners = data.winners || [];
-                if (winners.length > 0) {
-                    console.log('Hand over! Winners:', winners);
-                    console.log('Players cards:', data.players_cards);
-                    console.log('Pot amount:', data.pot);
-                    console.log('Board cards:', data.board);
-                    
-                    // 
-                    showVictoryAnimation(winners, data.players_cards, data.pot, data.board);
-                }
+            if (result.hand_over && result.winners && result.winners.length > 0) {
+                console.log('Hand over! Winners:', result.winners);
+                console.log('Players cards:', result.players_cards);
+                console.log('Pot amount:', result.pot);
+                console.log('Board cards:', result.board);
+                
+                // 显示胜利动画
+                showVictoryAnimation(result.winners, result.players_cards, result.pot, result.board);
             }
             
             updateGameState();
@@ -497,74 +559,44 @@ document.addEventListener('DOMContentLoaded', () => {
     startHandBtn.addEventListener('click', () => {
         fetch('/start_hand', { method: 'POST' })
             .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error(data.error);
-                    alert(data.error);
+            .then(result => {
+                if (result.error) {
+                    console.error(result.error);
                     return;
                 }
                 updateGameState();
             });
     });
-
+    
     foldBtn.addEventListener('click', () => takeAction('FOLD'));
     checkBtn.addEventListener('click', () => takeAction('CHECK'));
     callBtn.addEventListener('click', () => takeAction('CALL'));
-    allInBtn.addEventListener('click', () => takeAction('ALL_IN'));
     
-    // 加注按钮事件处理
+    // 更新加注滑块改变时的显示金额
+    raiseSlider.addEventListener('input', (e) => {
+        const raiseAmount = parseInt(e.target.value);
+        raiseBtn.textContent = `Raise ($${raiseAmount})`;
+    });
+    
+    // RAISE按钮直接使用滑块的值
     raiseBtn.addEventListener('click', () => {
-        const amount = parseInt(raiseAmount.value);
-        const minRaise = parseInt(raiseAmount.min);
-        const maxRaise = parseInt(raiseAmount.max);
-        
-        if (isNaN(amount)) {
-            alert('请输入有效的加注金额');
-            return;
-        }
-        
-        if (amount < minRaise) {
-            alert(`加注金额不能小于 $${minRaise}`);
-            return;
-        }
-        
-        if (amount > maxRaise) {
-            alert(`加注金额不能大于 $${maxRaise}`);
-            return;
-        }
-        
-        takeAction('RAISE', amount);
+        takeAction('RAISE', parseInt(raiseSlider.value));
     });
     
-    // 快捷加注按钮事件处理
-    raisePotThird.addEventListener('click', () => {
-        const amount = parseInt(raisePotThird.dataset.amount);
-        takeAction('RAISE', amount);
+    // 快捷加注按钮设置滑块值并更新显示
+    const quickRaiseButtons = [raisePotThird, raisePotHalf, raisePotFull, raisePot150];
+    quickRaiseButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const amount = parseInt(button.dataset.amount);
+            raiseSlider.value = amount;
+            raiseBtn.textContent = `Raise ($${amount})`;
+            takeAction('RAISE', amount); // 
+        });
     });
     
-    raisePotHalf.addEventListener('click', () => {
-        const amount = parseInt(raisePotHalf.dataset.amount);
-        takeAction('RAISE', amount);
-    });
-    
-    raisePotFull.addEventListener('click', () => {
-        const amount = parseInt(raisePotFull.dataset.amount);
-        takeAction('RAISE', amount);
-    });
-    
-    // 滑动条与输入框同步
-    raiseSlider.addEventListener('input', () => {
-        raiseAmount.value = raiseSlider.value;
-    });
-    
-    raiseAmount.addEventListener('input', () => {
-        const value = parseInt(raiseAmount.value);
-        const min = parseInt(raiseSlider.min);
-        const max = parseInt(raiseSlider.max);
-        
-        if (!isNaN(value) && value >= min && value <= max) {
-            raiseSlider.value = value;
-        }
+    // All In按钮直接使用最大值
+    allInBtn.addEventListener('click', () => {
+        takeAction('ALL_IN');
     });
     
     // 初始化玩家选择界面
