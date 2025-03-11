@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPhase = document.getElementById('current-phase');
     const currentPlayer = document.getElementById('current-player');
     const playersContainer = document.querySelector('.players-container');
+    
+    // Player selection elements
+    const playerSelectionScreen = document.getElementById('player-selection-screen');
+    const playerCountSelector = document.getElementById('player-count-selector');
+    const startGameBtn = document.getElementById('start-game-btn');
+    
+    // Game state variables
+    let selectedPlayerCount = 2; // Default to 2 players
 
     // 辅助函数：将卡片字符串中的花色字母转换为扑克牌符号
     function formatCard(cardStr) {
@@ -185,12 +193,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const smallBlindPosition = state.small_blind_position;
         const bigBlindPosition = state.big_blind_position;
         
+        // 过滤出活跃的玩家
+        const activePlayers = players.filter(player => player.state !== 'OUT');
+        const playerCount = activePlayers.length;
+        
         // 添加玩家
         players.forEach(player => {
+            // 如果玩家状态是OUT，不显示
+            if (player.state === 'OUT') return;
+            
             const playerDiv = document.createElement('div');
             const isCurrentPlayer = player.id === parseInt(currentPlayer.textContent);
             playerDiv.className = `player ${isCurrentPlayer ? 'active' : ''}`;
             playerDiv.dataset.playerId = player.id;
+            
+            // 使用新的定位逻辑，根据玩家总数和ID来定位
+            playerDiv.classList.add(`player-position-${playerCount}-${player.id}`);
             
             let handHtml = '';
             if (player.hand && player.hand.length > 0) {
@@ -384,42 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateGameState();
                 });
         });
-        
-        // 执行动画
-        setTimeout(() => {
-            // 引入注意力到赢家
-            const winnerElements = document.querySelectorAll('.winner');
-            winnerElements.forEach(el => {
-                el.classList.add('highlight-winner');
-            });
-            
-            // 展示赢家筹码动画
-            setTimeout(() => {
-                // 赢家筹码动画
-                winners.forEach(winner => {
-                    const winnerIndex = winners.indexOf(winner) + 1;
-                    const wonAmountEl = document.querySelector(`.winner-info:nth-child(${winnerIndex}) .won-amount`);
-                    const finalStackEl = document.querySelector(`.winner-info:nth-child(${winnerIndex}) .final-stack`);
-                    let currentAmount = 0;
-                    const targetAmount = winner.won;
-                    const initialStack = Math.round(winner.stack - winner.won);
-                    const duration = 1500; // 动画时长（毫秒）
-                    const interval = 30; // 更新间隔（毫秒）
-                    const steps = duration / interval;
-                    const increment = targetAmount / steps;
-                    
-                    const updateCounter = setInterval(() => {
-                        currentAmount += increment;
-                        if (currentAmount >= targetAmount) {
-                            currentAmount = targetAmount;
-                            clearInterval(updateCounter);
-                        }
-                        wonAmountEl.textContent = `$${Math.floor(currentAmount)}`;
-                        finalStackEl.textContent = `$${initialStack + Math.floor(currentAmount)}`;
-                    }, interval);
-                });
-            }, 1000);
-        }, 500);
     }
 
     // 事件处理函数
@@ -458,6 +440,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
+            updateGameState();
+        });
+    }
+    
+    // 玩家选择功能
+    function initPlayerSelection() {
+        // 添加玩家数量选择按钮事件
+        const playerButtons = playerCountSelector.querySelectorAll('.player-count-btn');
+        playerButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // 移除其他按钮的选中状态
+                playerButtons.forEach(btn => btn.classList.remove('selected'));
+                // 添加当前按钮的选中状态
+                button.classList.add('selected');
+                // 保存选择的玩家数量
+                selectedPlayerCount = parseInt(button.dataset.count);
+            });
+        });
+        
+        // 默认选中2个玩家
+        playerButtons[0].classList.add('selected');
+        
+        // 开始游戏按钮事件
+        startGameBtn.addEventListener('click', () => {
+            // 隐藏玩家选择界面
+            playerSelectionScreen.style.display = 'none';
+            // 初始化游戏
+            initGameWithPlayerCount(selectedPlayerCount);
+        });
+    }
+    
+    // 根据选择的玩家数量初始化游戏
+    function initGameWithPlayerCount(count) {
+        // 发送请求到服务器，初始化指定数量的玩家
+        fetch('/init_game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ player_count: count })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(data.error);
+                alert(data.error);
+                return;
+            }
+            // 更新游戏状态
             updateGameState();
         });
     }
@@ -536,9 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 初始化游戏状态
-    updateGameState();
-    
-    // 定期更新游戏状态
-    setInterval(updateGameState, 2000);
+    // 初始化玩家选择界面
+    initPlayerSelection();
 });

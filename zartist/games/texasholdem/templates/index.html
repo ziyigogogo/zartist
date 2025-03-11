@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,55 +18,149 @@
             background-color: #9c27b0;
             color: white;
         }
+
+        /* Player selection screen styles */
+        .player-selection-screen {
+            background-color: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .player-selection-container {
+            background-color: #2c3e50;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .player-selection-container h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .player-count-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .player-count-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player-count-btn:hover {
+            background-color: #2980b9;
+            transform: scale(1.1);
+        }
+
+        .player-count-btn.selected {
+            background-color: #2ecc71;
+            transform: scale(1.1);
+        }
+
+        .start-game-btn {
+            padding: 12px 30px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-game-btn:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 
 <body>
     <div class="game-container">
-        <div class="poker-table">
-            <div class="board-cards">
-                <div class="card-placeholder" id="board-1"></div>
-                <div class="card-placeholder" id="board-2"></div>
-                <div class="card-placeholder" id="board-3"></div>
-                <div class="card-placeholder" id="board-4"></div>
-                <div class="card-placeholder" id="board-5"></div>
-            </div>
-            <div class="pot-container">
-                <span>Pot: $</span>
-                <span id="pot-amount">0</span>
-            </div>
-            <div class="players-container">
-                <!-- Players will be dynamically added here -->
+        <!-- Player Selection Screen -->
+        <div id="player-selection-screen" class="player-selection-screen">
+            <div class="selection-container">
+                <h2 class="selection-title">Select Number of Players</h2>
+                <div id="player-count-selector" class="player-count-selector">
+                    <div class="player-count-btn" data-count="2">2</div>
+                    <div class="player-count-btn" data-count="3">3</div>
+                    <div class="player-count-btn" data-count="4">4</div>
+                    <div class="player-count-btn" data-count="5">5</div>
+                    <div class="player-count-btn" data-count="6">6</div>
+                    <div class="player-count-btn" data-count="7">7</div>
+                    <div class="player-count-btn" data-count="8">8</div>
+                    <div class="player-count-btn" data-count="9">9</div>
+                    <div class="player-count-btn" data-count="10">10</div>
+                </div>
+                <button id="start-game-btn" class="start-game-btn">Start Game</button>
             </div>
         </div>
-
-        <div class="controls">
-            <div class="game-info">
-                <div>Phase: <span id="current-phase">Not Started</span></div>
-                <div>Current Player: <span id="current-player">-</span></div>
+        
+        <!-- Poker Table -->
+        <div class="poker-table">
+            <!-- Players Container -->
+            <div class="players-container"><!-- Players will be dynamically added here --></div>
+            
+            <!-- Board Container (Community Cards) -->
+            <div class="board-container">
+                <div id="board-1" class="card-placeholder"></div>
+                <div id="board-2" class="card-placeholder"></div>
+                <div id="board-3" class="card-placeholder"></div>
+                <div id="board-4" class="card-placeholder"></div>
+                <div id="board-5" class="card-placeholder"></div>
             </div>
-            <div class="action-buttons">
-                <button id="start-hand">Start Hand</button>
-                <button id="fold">Fold</button>
-                <button id="check">Check</button>
-                <button id="call">Call</button>
-                <div class="raise-controls">
-                    <button id="raise">Raise</button>
+        </div>
+        
+        <!-- Game Controls -->
+        <div class="game-controls">
+            <div class="game-info">
+                <div class="pot">Pot: $<span id="pot-amount">0</span></div>
+                <div class="phase">Phase: <span id="current-phase">Not Started</span></div>
+                <div class="current-player">Current Player: <span id="current-player">None</span></div>
+            </div>
+            
+            <div class="game-actions">
+                <button id="start-hand" class="action-button">Start Hand</button>
+                <button id="fold" class="action-button" style="display:none">Fold</button>
+                <button id="check" class="action-button" style="display:none">Check</button>
+                <button id="call" class="action-button" style="display:none">Call</button>
+                <button id="raise" class="action-button" style="display:none">Raise</button>
+                <button id="all-in" class="action-button" style="display:none">All In</button>
+                <input id="raise-amount" type="number" min="0" max="1000" style="display:none">
+                
+                <div class="raise-slider-container" style="display:none">
+                    <input id="raise-slider" type="range" min="0" max="1000">
                     <div class="quick-raise-buttons">
-                        <button id="raise-pot-third">1/3 Pot</button>
-                        <button id="raise-pot-half">1/2 Pot</button>
-                        <button id="raise-pot-full">1x Pot</button>
-                    </div>
-                    <div class="raise-slider-container">
-                        <input type="range" id="raise-slider" min="0" max="100" value="0">
-                        <input type="number" id="raise-amount" min="0" step="1" value="0">
+                        <button id="raise-pot-third" class="quick-raise-button">1/3 Pot</button>
+                        <button id="raise-pot-half" class="quick-raise-button">1/2 Pot</button>
+                        <button id="raise-pot-full" class="quick-raise-button">1x Pot</button>
                     </div>
                 </div>
-                <button id="all-in">All In</button>
             </div>
         </div>
     </div>
+    
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
-
 </html>
