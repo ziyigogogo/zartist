@@ -33,7 +33,7 @@ def str2dict(s: str):
             for m in matches:
                 try:
                     d = literal_eval(m)
-                    if d and isinstance(d, dict):
+                    if isinstance(d, dict):
                         return d
                 except Exception:
                     continue
