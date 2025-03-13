@@ -1,6 +1,6 @@
 # Environment variables
 .env
-texasholdem
+texasholdem/
 play.py
 
 # Python
