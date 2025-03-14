@@ -142,7 +142,7 @@
                     <div class="player-count-btn" data-count="9">9</div>
                     <div class="player-count-btn" data-count="10">10</div>
                 </div>
-                <button id="start-game-btn" class="start-game-btn">Start Game</button>
+                <!-- Removed Start Game button -->
             </div>
         </div>
 
@@ -169,35 +169,35 @@
         <!-- Game Controls -->
         <div class="game-controls">
 
-            <div class="game-actions">
-                <!-- Start Hand button placed outside the raise-slider-container -->
-                <button id="start-hand" class="action-button">Start Hand</button>
+            <!-- <div class="game-actions"> -->
+            <!-- Start Hand button removed since we auto-start the first hand -->
+            <!-- <button id="start-hand" class="action-button">Start Hand</button> -->
 
-                <div class="raise-slider-container hidden">
-                    <div class="action-buttons">
-                        <button id="fold" class="action-button hidden">Fold</button>
-                        <button id="check" class="action-button hidden">Check</button>
-                        <button id="call" class="action-button hidden">Call</button>
-                        <button id="raise" class="action-button hidden">Raise</button>
-                    </div>
+            <!-- <div class="raise-slider-container hidden"> -->
+            <div class="action-buttons">
+                <button id="fold" class="action-button hidden">Fold</button>
+                <button id="check" class="action-button hidden">Check</button>
+                <button id="call" class="action-button hidden">Call</button>
+                <button id="raise" class="action-button hidden">Raise</button>
+            </div>
 
-                    <div class="slider-wrapper">
-                        <div class="slider-with-labels">
-                            <span id="min-raise-label" class="slider-min-label">$0</span>
-                            <input id="raise-slider" type="range" min="0" max="1000">
-                            <span id="max-raise-label" class="slider-max-label">$1000</span>
-                        </div>
-                    </div>
-
-                    <div class="quick-raise-buttons">
-                        <button id="raise-pot-third" class="quick-raise-button">1/3 Pot</button>
-                        <button id="raise-pot-half" class="quick-raise-button">1/2 Pot</button>
-                        <button id="raise-pot-full" class="quick-raise-button">1x Pot</button>
-                        <button id="raise-pot-2x" class="quick-raise-button">2x Pot</button>
-                        <button id="all-in" class="quick-raise-button all-in-button">All In</button>
-                    </div>
+            <div class="slider-wrapper">
+                <div class="slider-with-labels">
+                    <span id="min-raise-label" class="slider-min-label">$0</span>
+                    <input id="raise-slider" type="range" min="0" max="1000">
+                    <span id="max-raise-label" class="slider-max-label">$1000</span>
                 </div>
             </div>
+
+            <div class="quick-raise-buttons">
+                <button id="raise-pot-third" class="quick-raise-button">1/3 Pot</button>
+                <button id="raise-pot-half" class="quick-raise-button">1/2 Pot</button>
+                <button id="raise-pot-full" class="quick-raise-button">1x Pot</button>
+                <button id="raise-pot-2x" class="quick-raise-button">2x Pot</button>
+                <button id="all-in" class="quick-raise-button all-in-button">All In</button>
+            </div>
+            <!-- </div> -->
+            <!-- </div> -->
         </div>
     </div>
 

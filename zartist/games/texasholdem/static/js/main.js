@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const startHandBtn = document.getElementById('start-hand');
     const foldBtn = document.getElementById('fold');
     const checkBtn = document.getElementById('check');
     const callBtn = document.getElementById('call');
     const raiseBtn = document.getElementById('raise');
     const allInBtn = document.getElementById('all-in');
     const raiseSlider = document.getElementById('raise-slider');
-    const raiseSliderContainer = document.querySelector('.raise-slider-container');
+    const sliderWrapper = document.querySelector('.slider-wrapper');
     const raisePotThird = document.getElementById('raise-pot-third');
     const raisePotHalf = document.getElementById('raise-pot-half');
     const raisePotFull = document.getElementById('raise-pot-full');
@@ -18,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Player selection elements
     const playerSelectionScreen = document.getElementById('player-selection-screen');
     const playerCountSelector = document.getElementById('player-count-selector');
-    const startGameBtn = document.getElementById('start-game-btn');
+    const gameControls = document.querySelector('.game-controls');
+
+    // Hide game controls initially when player selection is shown
+    gameControls.classList.add('hidden');
 
     // Game state variables
     let selectedPlayerCount = 2; // Default to 2 players
@@ -80,14 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 更新游戏状态显示 - 使用有效底池大小
                 potAmount.textContent = realPotSize || 0;
 
-                // 显示/隐藏开始按钮
-                if (state.is_hand_running) {
-                    startHandBtn.classList.add('hidden');
-                } else {
-                    startHandBtn.classList.remove('hidden');
-                }
-                startHandBtn.disabled = state.is_hand_running;
-
                 // 处理当前玩家的动作按钮
                 const isCurrentPlayer = state.current_player !== null &&
                     state.players &&
@@ -123,10 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const canRaise = state.available_moves.includes('RAISE');
                     if (canRaise) {
                         raiseBtn.classList.remove('hidden');
-                        raiseSliderContainer.classList.remove('hidden');
+                        sliderWrapper.classList.remove('hidden');
                     } else {
                         raiseBtn.classList.add('hidden');
-                        raiseSliderContainer.classList.add('hidden');
+                        sliderWrapper.classList.add('hidden');
                     }
 
                     if (canRaise && state.raise_range) {
@@ -239,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkBtn.classList.add('hidden');
                     callBtn.classList.add('hidden');
                     raiseBtn.classList.add('hidden');
-                    raiseSliderContainer.classList.add('hidden');
+                    sliderWrapper.classList.add('hidden');
                 }
 
                 // 更新牌桌状态
@@ -672,19 +666,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.classList.add('selected');
                 // 保存选择的玩家数量
                 selectedPlayerCount = parseInt(button.dataset.count);
+
+                // 直接开始游戏，无需点击开始按钮
+                // 隐藏玩家选择界面
+                playerSelectionScreen.style.display = 'none';
+                // 显示游戏控制界面
+                gameControls.classList.remove('hidden');
+                // 初始化游戏
+                initGameWithPlayerCount(selectedPlayerCount);
             });
         });
 
         // 默认选中2个玩家
         playerButtons[0].classList.add('selected');
-
-        // 开始游戏按钮事件
-        startGameBtn.addEventListener('click', () => {
-            // 隐藏玩家选择界面
-            playerSelectionScreen.style.display = 'none';
-            // 初始化游戏
-            initGameWithPlayerCount(selectedPlayerCount);
-        });
     }
 
     // 根据选择的玩家数量初始化游戏
@@ -706,11 +700,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // 更新游戏状态
                 updateGameState();
+
+                // 开始第一局
+                startFirstHand();
             });
     }
 
-    // 按钮事件监听器
-    startHandBtn.addEventListener('click', () => {
+    // 开始第一局的函数
+    function startFirstHand() {
         // 重置牌桌上的卡片
         resetBoardCards();
 
@@ -723,8 +720,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 updateGameState();
             });
-    });
+    }
 
+    // 按钮事件监听器
     foldBtn.addEventListener('click', () => takeAction('FOLD'));
     checkBtn.addEventListener('click', () => takeAction('CHECK'));
     callBtn.addEventListener('click', () => takeAction('CALL'));
