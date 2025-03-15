@@ -83,7 +83,7 @@ def get_game_state():
             # raise相关数值
             'last_raise': game.last_raise,
             'min_raise': game.min_raise(),
-            "current_bet": game.player_bet_amount(game.current_player),
+            "current_bet": game.player_bet_amount(game.current_player) if game.current_player is not None else 0,
             # 初始化空列表
             'available_moves': [],
             'players': []
@@ -104,18 +104,28 @@ def get_game_state():
 
         # Update values for running hand
         if game.is_hand_running():
+            # Calculate pot values
+            pot_data = calculate_effective_pot()
+            real_pot_size = pot_data['real_pot_size']
+            chips_to_call = pot_data['chips_to_call']
+            effective_pot = pot_data['effective_pot']
+
+            # Format board cards with proper symbols and colors
+            formatted_board = [format_card(str(card)) for card in game.board]
+
             state.update({
                 'phase': str(game.hand_phase),
-                'board': [str(card) for card in game.board],
-                'pot': get_total_pot(),
-                'chips_to_call': game.chips_to_call(game.current_player)
+                'board': formatted_board,
+                'pot': real_pot_size,  # Use calculated real pot size
+                'chips_to_call': chips_to_call
             })
 
             # Update player information for running hand
             for i in range(game.max_players):
                 state['players'][i]['chips_at_stake'] = game.chips_at_stake(i)
                 if i == game.current_player:
-                    state['players'][i]['hand'] = [str(card) for card in game.get_hand(i)]
+                    # Format player hand cards with proper symbols and colors
+                    state['players'][i]['hand'] = [format_card(str(card)) for card in game.get_hand(i)]
 
             # Get available moves
             moves = game.get_available_moves()
@@ -126,6 +136,54 @@ def get_game_state():
                 max_raise = moves.raise_range.stop - 1
                 state['raise_range'] = {'min': min_raise, 'max': max_raise}
 
+                # Calculate pot-based raise values if RAISE is available
+                if 'RAISE' in state['available_moves'] and game.current_player is not None:
+                    # Calculate pot-based raise values
+                    raw_pot_third_value = effective_pot // 3
+                    raw_pot_half_value = effective_pot // 2
+                    raw_pot_full_value = effective_pot
+                    raw_pot_2x_value = effective_pot * 2
+
+                    # Apply minimum raise restriction
+                    pot_third_raise = max(min_raise, chips_to_call + raw_pot_third_value)
+                    pot_half_raise = max(min_raise, chips_to_call + raw_pot_half_value)
+                    pot_full_raise = max(min_raise, chips_to_call + raw_pot_full_value)
+                    pot_2x_raise = max(min_raise, chips_to_call + raw_pot_2x_value)
+
+                    # Calculate increments (amount above call)
+                    pot_third_increment = pot_third_raise - chips_to_call
+                    pot_half_increment = pot_half_raise - chips_to_call
+                    pot_full_increment = pot_full_raise - chips_to_call
+                    pot_2x_increment = pot_2x_raise - chips_to_call
+
+                    # Add pot-based raise calculations to state
+                    state['pot_raise_values'] = {
+                        'pot_third': {
+                            'total': pot_third_raise,
+                            'increment': pot_third_increment,
+                            'raw_value': raw_pot_third_value,
+                            'valid': raw_pot_third_value >= min_raise - chips_to_call
+                        },
+                        'pot_half': {
+                            'total': pot_half_raise,
+                            'increment': pot_half_increment,
+                            'raw_value': raw_pot_half_value,
+                            'valid': raw_pot_half_value >= min_raise - chips_to_call
+                        },
+                        'pot_full': {
+                            'total': pot_full_raise,
+                            'increment': pot_full_increment,
+                            'raw_value': raw_pot_full_value,
+                            'valid': raw_pot_full_value >= min_raise - chips_to_call
+                        },
+                        'pot_2x': {
+                            'total': pot_2x_raise,
+                            'increment': pot_2x_increment,
+                            'raw_value': raw_pot_2x_value,
+                            'valid': raw_pot_2x_value >= min_raise - chips_to_call
+                        }
+                    }
+
         return jsonify(state)
     except Exception as e:
         logger.error(f"Error in get_game_state: {str(e)}")
@@ -135,6 +193,53 @@ def get_game_state():
 def get_total_pot():
     """Helper function to calculate the total pot amount from all pots"""
     return sum(pot.get_amount() for pot in game.pots)
+
+
+def format_card(card_str):
+    """Format card string to display proper suit symbols and determine color"""
+    if not card_str or len(card_str) < 2:
+        return {'text': card_str, 'color': 'black'}
+
+    rank = card_str[0]
+    suit = card_str[1]
+
+    suit_symbol = suit
+    color = 'black'
+
+    if suit == 's':
+        suit_symbol = '\u2660'  # ♠
+    elif suit == 'h':
+        suit_symbol = '\u2665'  # ♥
+        color = 'red'
+    elif suit == 'd':
+        suit_symbol = '\u2666'  # ♦
+        color = 'red'
+    elif suit == 'c':
+        suit_symbol = '\u2663'  # ♣
+
+    return {'text': rank + suit_symbol, 'color': color}
+
+
+def calculate_effective_pot():
+    """Calculate real pot size and effective pot for betting calculations"""
+    # Calculate total bets from all players
+    total_bets = 0
+    for i in range(game.max_players):
+        if game.players[i].state != PlayerState.OUT:
+            total_bets += game.player_bet_amount(i)
+
+    # Real pot size = current pot + all player bets
+    real_pot_size = get_total_pot() + total_bets
+
+    # Calculate chips to call for current player
+    chips_to_call = 0
+    if game.current_player is not None and game.is_hand_running():
+        chips_to_call = game.chips_to_call(game.current_player)
+
+    # Effective pot = real pot size + chips to call
+    effective_pot = real_pot_size + chips_to_call
+
+    return {'real_pot_size': real_pot_size, 'chips_to_call': chips_to_call, 'effective_pot': effective_pot}
 
 
 @app.route('/take_action', methods=['POST'])

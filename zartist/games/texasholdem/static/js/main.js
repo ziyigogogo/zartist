@@ -25,48 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Game state variables
     let selectedPlayerCount = 2; // Default to 2 players
 
-    // 辅助函数：将卡片字符串中的花色字母转换为扑克牌符号
-    function formatCard(cardStr) {
-        if (!cardStr || cardStr.length < 2) return cardStr;
-
-        const rank = cardStr[0];
-        const suit = cardStr[1];
-
-        let suitSymbol = suit;
-        if (suit === 's') suitSymbol = '\u2660'; // 
-        else if (suit === 'h') suitSymbol = '\u2665'; // 
-        else if (suit === 'd') suitSymbol = '\u2666'; // 
-        else if (suit === 'c') suitSymbol = '\u2663'; // 
-
-        return rank + suitSymbol;
-    }
-
-    // 计算有效底池大小的函数
-    function calculateEffectivePot(state) {
-        // 计算实际底池大小（当前底池 + 所有玩家当前下注）
-        let totalBets = 0;
-        if (state.players) {
-            state.players.forEach(player => {
-                if (player.bet) {
-                    totalBets += player.bet;
-                }
-            });
-        }
-
-        // 实际底池 = 当前底池 + 所有玩家当前下注
-        const realPotSize = parseInt(state.pot) + totalBets;
-
-        // 计算有效底池大小（实际底池 + 需要跟注的筹码）
-        const chipsToCall = state.chips_to_call ? parseInt(state.chips_to_call) : 0;
-        const effectivePot = realPotSize + chipsToCall;
-
-        return {
-            realPotSize,
-            chipsToCall,
-            effectivePot
-        };
-    }
-
     function updateGameState() {
         fetch('/get_game_state')
             .then(response => response.json())
@@ -76,17 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // 计算有效底池大小
-                const { realPotSize } = calculateEffectivePot(state);
+                // 更新游戏状态显示 - 使用服务器计算的底池大小
+                potAmount.textContent = state.pot || 0;
 
-                // 更新游戏状态显示 - 使用有效底池大小
-                potAmount.textContent = realPotSize || 0;
-
-                // 处理当前玩家的动作按钮
-                const isCurrentPlayer = state.current_player !== null &&
-                    state.players &&
-                    state.players[state.current_player] &&
-                    state.players[state.current_player].id === state.current_player;
+                // 检查当前玩家是否是活跃玩家
+                const isCurrentPlayer = state.current_player !== null
 
                 // 根据可用动作显示按钮
                 if (isCurrentPlayer && state.available_moves) {
@@ -130,19 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log('raise_range:', state.raise_range.min, state.raise_range.max);
                         console.log('chips_to_call:', state.chips_to_call);
 
-                        const potSize = parseInt(state.pot);
-                        const chipsToCall = parseInt(state.chips_to_call);
-
-                        // 获取最小和最大加注额(todo: 后续更改跟注规则时改这里)
-                        // METHOD1: 至少加上一次RAISE总筹码的的一倍
-                        // const minRaiseTotal = Math.max(state.min_raise, Math.min((state.current_bet + state.chips_to_call) * 2, state.raise_range.max));
-
-                        // METHOD2: 至少加上一次RAISE差额
                         const minRaiseTotal = state.raise_range.min;
-
-                        // METHOD3: 至少加上一次RAISE差额的一倍
-                        // const minRaiseTotal = state.raise_range.min + state.last_raise;
-
                         const maxRaise = state.raise_range.max;
 
                         // 计算加注增量（超出跟注的部分）
@@ -150,22 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // 在Raise按钮上显示总金额和增量
                         raiseBtn.textContent = `Raise to $${minRaiseTotal}(+$${raiseIncrement})`;
-
-                        // 使用公共函数计算有效底池大小
-                        const { realPotSize, chipsToCall: chipsToCallValue, effectivePot } = calculateEffectivePot(state);
-
-                        // 计算底池比例值 - 原始值（不包含最小加注限制）
-                        const rawPotThirdValue = Math.floor(effectivePot / 3);
-                        const rawPotHalfValue = Math.floor(effectivePot / 2);
-                        const rawPotFullValue = effectivePot;
-                        const rawPot2xValue = Math.floor(effectivePot * 2);
-
-                        // 应用最小加注限制，计算最终加注金额（总下注额）
-                        // 确保所有加注都至少达到最小加注额
-                        const potThirdRaise = Math.max(minRaiseTotal, chipsToCallValue + rawPotThirdValue);
-                        const potHalfRaise = Math.max(minRaiseTotal, chipsToCallValue + rawPotHalfValue);
-                        const potFullRaise = Math.max(minRaiseTotal, chipsToCallValue + rawPotFullValue);
-                        const pot2xRaise = Math.max(minRaiseTotal, chipsToCallValue + rawPot2xValue);
 
                         // 设置滑动条范围
                         raiseSlider.min = minRaiseTotal;
@@ -176,50 +100,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         minRaiseLabel.textContent = `Min: $${minRaiseTotal}`;
                         maxRaiseLabel.textContent = `Max: $${maxRaise}`;
 
-                        // 计算每种加注超出跟注的增量部分
-                        const potThirdIncrement = potThirdRaise - chipsToCallValue;
-                        const potHalfIncrement = potHalfRaise - chipsToCallValue;
-                        const potFullIncrement = potFullRaise - chipsToCallValue;
-                        const pot2xIncrement = pot2xRaise - chipsToCallValue;
+                        // 使用服务器计算的底池比例加注值
+                        if (state.pot_raise_values) {
+                            // 定义底池比例按钮和对应的数据
+                            const raiseButtons = [
+                                { button: raisePotThird, data: state.pot_raise_values.pot_third, label: '1/3 Pot' },
+                                { button: raisePotHalf, data: state.pot_raise_values.pot_half, label: '1/2 Pot' },
+                                { button: raisePotFull, data: state.pot_raise_values.pot_full, label: '1x Pot' },
+                                { button: raisePot2x, data: state.pot_raise_values.pot_2x, label: '2x Pot' }
+                            ];
 
-                        // 更新快捷加注按钮文本 - 显示总金额和增量
-                        raisePotThird.textContent = `1/3 Pot to $${potThirdRaise}(+$${potThirdIncrement})`;
-                        raisePotHalf.textContent = `1/2 Pot to $${potHalfRaise}(+$${potHalfIncrement})`;
-                        raisePotFull.textContent = `1x Pot to $${potFullRaise}(+$${potFullIncrement})`;
-                        raisePot2x.textContent = `2x Pot to $${pot2xRaise}(+$${pot2xIncrement})`;
-                        allInBtn.textContent = `All In ($${state.players[state.current_player].stack})`;
+                            // 获取玩家筹码和禁用条件
+                            const playerChips = state.players[state.current_player].stack;
+                            const disableRaise = playerChips < minRaiseTotal;
 
-                        // 存储快捷加注按钮的值
-                        raisePotThird.dataset.amount = potThirdRaise;
-                        raisePotHalf.dataset.amount = potHalfRaise;
-                        raisePotFull.dataset.amount = potFullRaise;
-                        raisePot2x.dataset.amount = pot2xRaise;
-                        allInBtn.dataset.amount = maxRaise;
+                            // 设置ALL IN按钮
+                            allInBtn.textContent = `All In ($${playerChips})`;
+                            allInBtn.dataset.amount = maxRaise;
 
-                        // 如果玩家筹码不足最小加注，禁用加注按钮
-                        const playerChips = state.players[state.current_player].stack;
-                        const disableRaise = playerChips < minRaiseTotal;
+                            // 设置加注按钮状态
+                            raiseBtn.disabled = disableRaise;
+                            raiseSlider.disabled = disableRaise;
 
-                        raiseBtn.disabled = disableRaise;
-                        raiseSlider.disabled = disableRaise;
-
-                        // 使用总加注额与最小加注额比较来判断底池比例按钮是否应该显示
-                        const hideThird = rawPotThirdValue < minRaiseTotal;
-                        const hideHalf = rawPotHalfValue < minRaiseTotal;
-                        const hideFull = rawPotFullValue < minRaiseTotal;
-                        const hide2x = rawPot2xValue < minRaiseTotal;
-
-                        // 显示/隐藏底池比例按钮
-                        raisePotThird.classList.toggle('hidden', hideThird);
-                        raisePotHalf.classList.toggle('hidden', hideHalf);
-                        raisePotFull.classList.toggle('hidden', hideFull);
-                        raisePot2x.classList.toggle('hidden', hide2x);
-
-                        // 禁用按钮（如果金额满足显示要求但玩家筹码不足）
-                        raisePotThird.disabled = disableRaise || playerChips < potThirdRaise;
-                        raisePotHalf.disabled = disableRaise || playerChips < potHalfRaise;
-                        raisePotFull.disabled = disableRaise || playerChips < potFullRaise;
-                        raisePot2x.disabled = disableRaise || playerChips < pot2xRaise;
+                            // 批量处理所有底池比例按钮
+                            raiseButtons.forEach(({ button, data, label }) => {
+                                button.textContent = `${label} to $${data.total}(+$${data.increment})`;
+                                button.dataset.amount = data.total;
+                                button.classList.toggle('hidden', !data.valid);
+                                button.disabled = disableRaise || playerChips < data.total;
+                            });
+                        }
                     }
 
                     // 显示ALL IN按钮 - 始终显示，不再检查canAllIn
@@ -243,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateBoard(board) {
-        // 更新公共牌
         for (let i = 1; i <= 5; i++) {
             const cardElement = document.getElementById(`board-${i}`);
             const card = board[i - 1];
@@ -253,9 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasCardBack = cardElement.querySelector('.card-back');
 
             if (card) {
-                // 格式化卡片显示
-                const formattedCard = formatCard(card);
-                const cardClass = formattedCard.includes('\u2665') || formattedCard.includes('\u2666') ? 'red' : 'black';
+                // 使用服务器提供的已格式化卡片数据
+                const cardText = card.text;
+                const cardClass = card.color;
 
                 // 如果是新卡片，创建翻转动画结构
                 if (!existingCard && !hasCardBack) {
@@ -271,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 创建卡片正面
                     const cardFront = document.createElement('div');
                     cardFront.className = `card-front ${cardClass}`;
-                    cardFront.innerHTML = formattedCard;
+                    cardFront.innerHTML = cardText;
                     cardElement.appendChild(cardFront);
 
                     // 延迟翻转，实现逐一翻牌的效果
@@ -281,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (existingCard && !cardElement.classList.contains('flipped')) {
                     // 如果卡片已存在但尚未翻转，更新内容并翻转
                     const cardFront = cardElement.querySelector('.card-front') || cardElement;
-                    cardFront.innerHTML = formattedCard;
+                    cardFront.innerHTML = cardText;
                     cardFront.className = `card-front ${cardClass}`;
 
                     // 延迟翻转
@@ -301,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 创建卡片正面
                     const cardFront = document.createElement('div');
                     cardFront.className = `card-front ${cardClass}`;
-                    cardFront.innerHTML = formattedCard;
+                    cardFront.innerHTML = cardText;
                     cardElement.appendChild(cardFront);
 
                     // 立即翻转，因为这是更新已有卡片
@@ -349,8 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 handHtml = `
                     <div class="player-hand">
                         ${player.hand.map(card => `
-                            <div class="card ${formatCard(card).includes('\u2665') || formatCard(card).includes('\u2666') ? 'red' : 'black'}">
-                                ${formatCard(card)}
+                            <div class="card ${card.color}">
+                                ${card.text}
                             </div>
                         `).join('')}
                     </div>
@@ -549,8 +458,8 @@ document.addEventListener('DOMContentLoaded', () => {
             cardsDiv.className = 'player-cards';
             player.cards.forEach(card => {
                 const cardDiv = document.createElement('div');
-                const formattedCard = formatCard(card);
-                cardDiv.className = `card ${formattedCard.includes('\u2665') || formattedCard.includes('\u2666') ? 'red' : 'black'}`;
+                const formattedCard = card.text;
+                cardDiv.className = `card ${card.color}`;
                 cardDiv.textContent = formattedCard;
                 cardsDiv.appendChild(cardDiv);
             });
@@ -573,8 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
         boardCardsDiv.className = 'board-cards';
         boardCards.forEach(card => {
             const cardDiv = document.createElement('div');
-            const formattedCard = formatCard(card);
-            cardDiv.className = `card ${formattedCard.includes('\u2665') || formattedCard.includes('\u2666') ? 'red' : 'black'}`;
+            const formattedCard = card.text;
+            cardDiv.className = `card ${card.color}`;
             cardDiv.textContent = formattedCard;
             boardCardsDiv.appendChild(cardDiv);
         });
@@ -608,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetBoardCards() {
-        // 重置公共牌区域的所有卡片
+        // 重置牌桌上的卡片
         for (let i = 1; i <= 5; i++) {
             const cardElement = document.getElementById(`board-${i}`);
             // 清空内容并移除翻转状态
