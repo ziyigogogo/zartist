@@ -283,7 +283,7 @@ def take_action():
 
             # Get cards of all players still in the game using in_pot_iter
             for player_id in game.in_pot_iter():
-                player_cards = [str(card) for card in game.get_hand(player_id)]
+                player_cards = [format_card(str(card)) for card in game.get_hand(player_id)]
                 players_cards.append({
                     'id': player_id,
                     'cards': player_cards,
@@ -295,21 +295,30 @@ def take_action():
             if game.hand_history and game.hand_history.settle and game.hand_history.settle.pot_winners:
                 for pot_id, (amount, best_rank, winners_list) in game.hand_history.settle.pot_winners.items():
                     for player_id in winners_list:
-                        # Add winner only if not already in the list
-                        if not any(winner['id'] == player_id for winner in winners):
-                            winners.append({
-                                'id': player_id,
-                                'stack': game.players[player_id].chips,
-                                'final_state': str(game.players[player_id].state),
-                                'pot_id': pot_id,
-                                'hand_rank': str(best_rank)
-                            })
+                        winner = {
+                            'id': player_id,
+                            'stack': game.players[player_id].chips,
+                            'won': amount / len(winners_list)
+                        }
+                        winners.append(winner)
 
-                # Calculate winnings for each pot
-                if winners:
-                    win_amount_per_player = pot_amount / len(winners)
-                    for winner in winners:
-                        winner['won'] = win_amount_per_player
+                # If there are multiple winners for the same player, combine them
+                winners_by_id = {}
+                for winner in winners:
+                    if winner['id'] in winners_by_id:
+                        winners_by_id[winner['id']]['won'] += winner['won']
+                    else:
+                        winners_by_id[winner['id']] = winner
+                winners = list(winners_by_id.values())
+
+                # Calculate win amount per player for animation
+                total_win_amount = sum(winner['won'] for winner in winners)
+                win_amount_per_player = total_win_amount / len(winners) if winners else 0
+                for winner in winners:
+                    winner['won'] = win_amount_per_player
+
+        # Format board cards for victory animation
+        formatted_board = [format_card(str(card)) for card in game.board] if hand_over else []
 
         return jsonify({
             'success': True,
@@ -317,7 +326,7 @@ def take_action():
             'winners': winners if hand_over else None,
             'players_cards': players_cards if hand_over else None,
             'pot': get_total_pot() if hand_over else 0,
-            'board': [str(card) for card in game.board] if hand_over else [],
+            'board': formatted_board if hand_over else [],
             'final_phase': str(game.hand_phase) if hand_over else None
         })
     except Exception as e:

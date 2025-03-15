@@ -160,6 +160,13 @@ body {
     z-index: 10;
 }
 
+.player.out {
+    background-color: rgba(80, 80, 80, 0.8) !important;
+    box-shadow: 0 0 10px rgba(80, 80, 80, 0.7) !important;
+    opacity: 0.7;
+    border: 2px solid #555 !important;
+}
+
 .player-info {
     display: flex;
     flex-direction: column;

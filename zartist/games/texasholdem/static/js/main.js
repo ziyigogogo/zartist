@@ -25,131 +25,199 @@ document.addEventListener('DOMContentLoaded', () => {
     // Game state variables
     let selectedPlayerCount = 2; // Default to 2 players
 
+    // 玩家选择功能
+    function initPlayerSelection() {
+        // 添加玩家数量选择按钮事件
+        const playerButtons = playerCountSelector.querySelectorAll('.player-count-btn');
+        playerButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // 移除其他按钮的选中状态
+                playerButtons.forEach(btn => btn.classList.remove('selected'));
+                // 添加当前按钮的选中状态
+                button.classList.add('selected');
+                // 保存选择的玩家数量
+                selectedPlayerCount = parseInt(button.dataset.count);
+                playerSelectionScreen.style.display = 'none';
+                gameControls.classList.remove('hidden');
+                initGameWithPlayerCount(selectedPlayerCount);
+            });
+        });
+        playerButtons[0].classList.add('selected');
+    }
+
+    // 根据选择的玩家数量初始化游戏
+    function initGameWithPlayerCount(count) {
+        // 发送请求到服务器，初始化指定数量的玩家
+        fetch('/init_game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ player_count: count })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    alert(data.error);
+                    return;
+                }
+                // 更新游戏状态
+                updateGameState();
+
+                // 开始第一局
+                startFirstHand();
+            });
+    }
+
+    // 开始第一局的函数
+    function startFirstHand() {
+        // 重置牌桌上的卡片
+        resetBoardCards();
+
+        fetch('/start_hand', { method: 'POST' })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    console.error(result.error);
+                    return;
+                }
+                updateGameState();
+            });
+    }
+
+
     function updateGameState() {
         fetch('/get_game_state')
             .then(response => response.json())
             .then(state => {
                 if (state.error) {
-                    console.error(state.error);
+                    console.error("Error getting game state:", state.error);
                     return;
                 }
 
-                // 更新游戏状态显示 - 使用服务器计算的底池大小
-                potAmount.textContent = state.pot || 0;
-
-                // 检查当前玩家是否是活跃玩家
-                const isCurrentPlayer = state.current_player !== null
-
-                // 根据可用动作显示按钮
-                if (isCurrentPlayer && state.available_moves) {
-                    // 调试日志
-                    console.log('State:', state);
-
-                    // 显示FOLD按钮
-                    foldBtn.classList.remove('hidden');
-                    foldBtn.disabled = false;
-
-                    // 根据需要跟注的筹码决定显示CHECK还是CALL
-                    if (state.chips_to_call > 0) {
-                        checkBtn.classList.add('hidden');
-                        callBtn.classList.remove('hidden');
-                        callBtn.textContent = `Call ($${state.chips_to_call})`;
-                        callBtn.disabled = false;
-                    } else {
-                        if (state.available_moves.includes('CHECK')) {
-                            checkBtn.classList.remove('hidden');
-                        } else {
-                            checkBtn.classList.add('hidden');
-                        }
-                        callBtn.classList.add('hidden');
-                        checkBtn.disabled = false;
-                    }
-
-                    // 显示RAISE按钮和滑条
-                    const canRaise = state.available_moves.includes('RAISE');
-                    if (canRaise) {
-                        raiseBtn.classList.remove('hidden');
-                        sliderWrapper.classList.remove('hidden');
-                    } else {
-                        raiseBtn.classList.add('hidden');
-                        sliderWrapper.classList.add('hidden');
-                    }
-
-                    if (canRaise && state.raise_range) {
-                        console.log('last_raise:', state.last_raise);
-                        console.log('min_raise:', state.min_raise);
-                        console.log('current_bet:', state.current_bet);
-                        console.log('raise_range:', state.raise_range.min, state.raise_range.max);
-                        console.log('chips_to_call:', state.chips_to_call);
-
-                        const minRaiseTotal = state.raise_range.min;
-                        const maxRaise = state.raise_range.max;
-
-                        // 计算加注增量（超出跟注的部分）
-                        const raiseIncrement = minRaiseTotal - state.current_bet;
-
-                        // 在Raise按钮上显示总金额和增量
-                        raiseBtn.textContent = `Raise to $${minRaiseTotal}(+$${raiseIncrement})`;
-
-                        // 设置滑动条范围
-                        raiseSlider.min = minRaiseTotal;
-                        raiseSlider.max = maxRaise;
-                        raiseSlider.value = minRaiseTotal;
-
-                        // 动态设置滑动条标签
-                        minRaiseLabel.textContent = `Min: $${minRaiseTotal}`;
-                        maxRaiseLabel.textContent = `Max: $${maxRaise}`;
-
-                        // 使用服务器计算的底池比例加注值
-                        if (state.pot_raise_values) {
-                            // 定义底池比例按钮和对应的数据
-                            const raiseButtons = [
-                                { button: raisePotThird, data: state.pot_raise_values.pot_third, label: '1/3 Pot' },
-                                { button: raisePotHalf, data: state.pot_raise_values.pot_half, label: '1/2 Pot' },
-                                { button: raisePotFull, data: state.pot_raise_values.pot_full, label: '1x Pot' },
-                                { button: raisePot2x, data: state.pot_raise_values.pot_2x, label: '2x Pot' }
-                            ];
-
-                            // 获取玩家筹码和禁用条件
-                            const playerChips = state.players[state.current_player].stack;
-                            const disableRaise = playerChips < minRaiseTotal;
-
-                            // 设置ALL IN按钮
-                            allInBtn.textContent = `All In ($${playerChips})`;
-                            allInBtn.dataset.amount = maxRaise;
-
-                            // 设置加注按钮状态
-                            raiseBtn.disabled = disableRaise;
-                            raiseSlider.disabled = disableRaise;
-
-                            // 批量处理所有底池比例按钮
-                            raiseButtons.forEach(({ button, data, label }) => {
-                                button.textContent = `${label} to $${data.total}(+$${data.increment})`;
-                                button.dataset.amount = data.total;
-                                button.classList.toggle('hidden', !data.valid);
-                                button.disabled = disableRaise || playerChips < data.total;
-                            });
-                        }
-                    }
-
-                    // 显示ALL IN按钮 - 始终显示，不再检查canAllIn
-                    allInBtn.classList.remove('hidden');
-                    // 只有在玩家没有足够筹码时禁用ALL IN按钮
-                    const playerChips = state.players[state.current_player].stack;
-                    allInBtn.disabled = playerChips <= 0;
-                } else {
-                    // 隐藏所有动作按钮，但保持ALL IN按钮可见
-                    foldBtn.classList.add('hidden');
-                    checkBtn.classList.add('hidden');
-                    callBtn.classList.add('hidden');
-                    raiseBtn.classList.add('hidden');
-                    sliderWrapper.classList.add('hidden');
-                }
-
-                // 更新牌桌状态
+                potAmount.textContent = state.pot;
+                updateAction(state);
                 updateBoard(state.board);
                 updatePlayers(state.players, state);
             });
+    }
+
+    // 更新玩家动作按钮的函数
+    function updateAction(state) {
+        // 根据可用动作显示按钮
+        if (state.available_moves) {
+            // 调试日志
+            console.log('State:', state);
+
+            // 显示FOLD按钮
+            foldBtn.classList.remove('hidden');
+            foldBtn.disabled = false;
+
+            // 根据需要跟注的筹码决定显示CHECK还是CALL
+            if (state.chips_to_call > 0) {
+                checkBtn.classList.add('hidden');
+                callBtn.classList.remove('hidden');
+                callBtn.textContent = `Call ($${state.chips_to_call})`;
+                callBtn.disabled = false;
+            } else {
+                if (state.available_moves.includes('CHECK')) {
+                    checkBtn.classList.remove('hidden');
+                } else {
+                    checkBtn.classList.add('hidden');
+                }
+                callBtn.classList.add('hidden');
+                checkBtn.disabled = false;
+            }
+
+            // 处理RAISE相关控件
+            const canRaise = state.available_moves.includes('RAISE');
+            updateRaiseControls(canRaise, state);
+
+            // 显示ALL IN按钮 - 始终显示，不再检查canAllIn
+            allInBtn.classList.remove('hidden');
+            // 只有在玩家没有足够筹码时禁用ALL IN按钮
+            const playerChips = state.players[state.current_player].stack;
+            allInBtn.disabled = playerChips <= 0;
+        } else {
+            // 隐藏所有动作按钮，但保持ALL IN按钮可见
+            foldBtn.classList.add('hidden');
+            checkBtn.classList.add('hidden');
+            callBtn.classList.add('hidden');
+            raiseBtn.classList.add('hidden');
+            sliderWrapper.classList.add('hidden');
+        }
+    }
+
+    // 处理RAISE相关控件的函数
+    function updateRaiseControls(canRaise, state) {
+        // 显示或隐藏RAISE按钮和滑条
+        if (canRaise) {
+            raiseBtn.classList.remove('hidden');
+            sliderWrapper.classList.remove('hidden');
+        } else {
+            raiseBtn.classList.add('hidden');
+            sliderWrapper.classList.add('hidden');
+            return; // 如果不能加注，直接返回
+        }
+
+        // 只有当可以加注且有加注范围时才继续
+        if (state.raise_range) {
+            console.log('last_raise:', state.last_raise);
+            console.log('min_raise:', state.min_raise);
+            console.log('current_bet:', state.current_bet);
+            console.log('raise_range:', state.raise_range.min, state.raise_range.max);
+            console.log('chips_to_call:', state.chips_to_call);
+
+            const minRaiseTotal = state.raise_range.min;
+            const maxRaise = state.raise_range.max;
+
+            // 计算加注增量（超出跟注的部分）
+            const raiseIncrement = minRaiseTotal - state.current_bet;
+
+            // 在Raise按钮上显示总金额和增量
+            raiseBtn.textContent = `Raise to $${minRaiseTotal}(+$${raiseIncrement})`;
+
+            // 设置滑动条范围
+            raiseSlider.min = minRaiseTotal;
+            raiseSlider.max = maxRaise;
+            raiseSlider.value = minRaiseTotal;
+
+            // 动态设置滑动条标签
+            minRaiseLabel.textContent = `Min: $${minRaiseTotal}`;
+            maxRaiseLabel.textContent = `Max: $${maxRaise}`;
+
+            // 使用服务器计算的底池比例加注值
+            if (state.pot_raise_values) {
+                // 定义底池比例按钮和对应的数据
+                const raiseButtons = [
+                    { button: raisePotThird, data: state.pot_raise_values.pot_third, label: '1/3 Pot' },
+                    { button: raisePotHalf, data: state.pot_raise_values.pot_half, label: '1/2 Pot' },
+                    { button: raisePotFull, data: state.pot_raise_values.pot_full, label: '1x Pot' },
+                    { button: raisePot2x, data: state.pot_raise_values.pot_2x, label: '2x Pot' }
+                ];
+
+                // 获取玩家筹码和禁用条件
+                const playerChips = state.players[state.current_player].stack;
+                const disableRaise = playerChips < minRaiseTotal;
+
+                // 设置ALL IN按钮
+                allInBtn.textContent = `All In ($${playerChips})`;
+                allInBtn.dataset.amount = maxRaise;
+
+                // 设置加注按钮状态
+                raiseBtn.disabled = disableRaise;
+                raiseSlider.disabled = disableRaise;
+
+                // 批量处理所有底池比例按钮
+                raiseButtons.forEach(({ button, data, label }) => {
+                    button.textContent = `${label} to $${data.total}(+$${data.increment})`;
+                    button.dataset.amount = data.total;
+                    button.classList.toggle('hidden', !data.valid);
+                    button.disabled = disableRaise || playerChips < data.total;
+                });
+            }
+        }
     }
 
     function updateBoard(board) {
@@ -157,17 +225,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const cardElement = document.getElementById(`board-${i}`);
             const card = board[i - 1];
 
-            // 检查卡片元素是否已经存在并且有内容
-            const existingCard = cardElement.textContent.trim() !== '';
-            const hasCardBack = cardElement.querySelector('.card-back');
-
             if (card) {
                 // 使用服务器提供的已格式化卡片数据
                 const cardText = card.text;
                 const cardClass = card.color;
 
-                // 如果是新卡片，创建翻转动画结构
-                if (!existingCard && !hasCardBack) {
+                // 检查卡片是否需要翻转动画
+                const needsFlipAnimation = cardElement.className === 'card-placeholder' ||
+                    !cardElement.classList.contains('flipped');
+
+                // 如果需要翻转动画
+                if (needsFlipAnimation) {
                     // 清空原有内容
                     cardElement.textContent = '';
                     cardElement.className = 'card';
@@ -187,34 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         cardElement.classList.add('flipped');
                     }, 300 * (i - 1)); // 每张牌延迟300毫秒
-                } else if (existingCard && !cardElement.classList.contains('flipped')) {
-                    // 如果卡片已存在但尚未翻转，更新内容并翻转
-                    const cardFront = cardElement.querySelector('.card-front') || cardElement;
-                    cardFront.innerHTML = cardText;
-                    cardFront.className = `card-front ${cardClass}`;
-
-                    // 延迟翻转
-                    setTimeout(() => {
-                        cardElement.classList.add('flipped');
-                    }, 300 * (i - 1));
-                } else if (!hasCardBack) {
-                    // 如果是旧的卡片结构（没有背面），更新为新结构
-                    cardElement.textContent = '';
-                    cardElement.className = 'card';
-
-                    // 创建卡片背面
-                    const cardBack = document.createElement('div');
-                    cardBack.className = 'card-back';
-                    cardElement.appendChild(cardBack);
-
-                    // 创建卡片正面
-                    const cardFront = document.createElement('div');
-                    cardFront.className = `card-front ${cardClass}`;
-                    cardFront.innerHTML = cardText;
-                    cardElement.appendChild(cardFront);
-
-                    // 立即翻转，因为这是更新已有卡片
-                    cardElement.classList.add('flipped');
                 }
             } else {
                 // 如果没有卡片，重置为占位符
@@ -231,26 +271,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const playersContainer = document.querySelector('.players-container');
         playersContainer.innerHTML = '';
 
-        // 获取位置信息
+        // u8f93u51fau73a9u5bb6u72b6u6001u4fe1u606f
+        console.log('Players state:', players.map(p => ({ id: p.id, state: p.state })));
+
+        // u83b7u53d6u4f4du7f6eu4fe1u606f
         const dealerPosition = state.dealer_position;
         const smallBlindPosition = state.small_blind_position;
         const bigBlindPosition = state.big_blind_position;
 
-        // 过滤出活跃的玩家
+        // u8ba1u7b97u6d3bu8dc3u73a9u5bb6u6570u91cf
         const activePlayers = players.filter(player => player.state !== 'OUT');
-        const playerCount = activePlayers.length;
+        const playerCount = players.length; // u4f7fu7528u603bu73a9u5bb6u6570
 
-        // 添加玩家
+        // u6dfbu52a0u73a9u5bb6
         players.forEach(player => {
-            // 如果玩家状态是OUT，不显示
-            if (player.state === 'OUT') return;
-
             const playerDiv = document.createElement('div');
-            const isCurrentPlayer = player.id === parseInt(state.current_player);
-            playerDiv.className = `player ${isCurrentPlayer ? 'active' : ''}`;
-            playerDiv.dataset.playerId = player.id;
+            playerDiv.className = `player`;
 
-            // 使用新的定位逻辑，根据玩家总数和ID来定位
+            const isCurrentPlayer = player.id === parseInt(state.current_player);
+            const isOutPlayer = player.state.includes('OUT');
+            if (isCurrentPlayer) playerDiv.classList.add('active');
+            if (isOutPlayer) playerDiv.classList.add('out');
+
+            playerDiv.dataset.playerId = player.id;
             playerDiv.classList.add(`player-position-${playerCount}-${player.id}`);
 
             let handHtml = '';
@@ -275,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // 添加位置指示器容器
+            // u6dfbu52a0u73a9u5bb6u4f4du7f6eu5b9au4f4du5bb6
             const indicatorsContainer = document.createElement('div');
             indicatorsContainer.className = 'position-indicators';
             playerDiv.appendChild(indicatorsContainer);
@@ -349,9 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 展示所有玩家的牌
         playersCards.forEach(player => {
             const playerCardDiv = document.createElement('div');
-            playerCardDiv.className = 'player-result';
-
-            // 检查该玩家是否是赢家
             const isWinner = winners.some(w => w.id === player.id);
             if (isWinner) {
                 playerCardDiv.classList.add('winner');
@@ -563,73 +603,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // 玩家选择功能
-    function initPlayerSelection() {
-        // 添加玩家数量选择按钮事件
-        const playerButtons = playerCountSelector.querySelectorAll('.player-count-btn');
-        playerButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // 移除其他按钮的选中状态
-                playerButtons.forEach(btn => btn.classList.remove('selected'));
-                // 添加当前按钮的选中状态
-                button.classList.add('selected');
-                // 保存选择的玩家数量
-                selectedPlayerCount = parseInt(button.dataset.count);
-
-                // 直接开始游戏，无需点击开始按钮
-                // 隐藏玩家选择界面
-                playerSelectionScreen.style.display = 'none';
-                // 显示游戏控制界面
-                gameControls.classList.remove('hidden');
-                // 初始化游戏
-                initGameWithPlayerCount(selectedPlayerCount);
-            });
-        });
-
-        // 默认选中2个玩家
-        playerButtons[0].classList.add('selected');
-    }
-
-    // 根据选择的玩家数量初始化游戏
-    function initGameWithPlayerCount(count) {
-        // 发送请求到服务器，初始化指定数量的玩家
-        fetch('/init_game', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ player_count: count })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error(data.error);
-                    alert(data.error);
-                    return;
-                }
-                // 更新游戏状态
-                updateGameState();
-
-                // 开始第一局
-                startFirstHand();
-            });
-    }
-
-    // 开始第一局的函数
-    function startFirstHand() {
-        // 重置牌桌上的卡片
-        resetBoardCards();
-
-        fetch('/start_hand', { method: 'POST' })
-            .then(response => response.json())
-            .then(result => {
-                if (result.error) {
-                    console.error(result.error);
-                    return;
-                }
-                updateGameState();
-            });
-    }
 
     // 按钮事件监听器
     foldBtn.addEventListener('click', () => takeAction('FOLD'));
