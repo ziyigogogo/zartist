@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // action buttons
     const foldBtn = document.getElementById('fold');
     const checkBtn = document.getElementById('check');
     const callBtn = document.getElementById('call');
@@ -10,9 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const raisePotHalf = document.getElementById('raise-pot-half');
     const raisePotFull = document.getElementById('raise-pot-full');
     const raisePot2x = document.getElementById('raise-pot-2x');
-    const potAmount = document.getElementById('pot-amount');
     const minRaiseLabel = document.getElementById('min-raise-label');
     const maxRaiseLabel = document.getElementById('max-raise-label');
+
+
+
+    // pot amount
+    const potAmount = document.getElementById('pot-amount');
 
     // Player selection elements
     const playerSelectionScreen = document.getElementById('player-selection-screen');
@@ -64,8 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // 更新游戏状态
                 updateGameState();
-
-                // 开始第一局
                 startFirstHand();
             });
     }
@@ -96,32 +100,44 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                potAmount.textContent = state.pot;
-                updateAction(state);
-                updateBoard(state.board);
-                updatePlayers(state.players, state);
+                // Access data from the new state structure
+                const publicInfo = state.public_info;
+                const privateInfo = state.private_info;
+
+                // Update pot amount from public info
+                potAmount.textContent = publicInfo.pot;
+
+                // Update action using both public and private info
+                updateAction(publicInfo, privateInfo);
+
+                // Update board from public info
+                updateBoard(publicInfo.board);
+
+                // Update players using both public and private info
+                updatePlayers(publicInfo.players, publicInfo, privateInfo);
             });
     }
 
     // 更新玩家动作按钮的函数
-    function updateAction(state) {
+    function updateAction(publicInfo, privateInfo) {
         // 根据可用动作显示按钮
-        if (state.available_moves) {
+        if (privateInfo.available_moves && privateInfo.available_moves.length > 0) {
             // 调试日志
-            console.log('State:', state);
+            console.log('Public Info:', publicInfo);
+            console.log('Private Info:', privateInfo);
 
             // 显示FOLD按钮
             foldBtn.classList.remove('hidden');
             foldBtn.disabled = false;
 
             // 根据需要跟注的筹码决定显示CHECK还是CALL
-            if (state.chips_to_call > 0) {
+            if (privateInfo.chips_to_call > 0) {
                 checkBtn.classList.add('hidden');
                 callBtn.classList.remove('hidden');
-                callBtn.textContent = `Call ($${state.chips_to_call})`;
+                callBtn.textContent = `Call ($${privateInfo.chips_to_call})`;
                 callBtn.disabled = false;
             } else {
-                if (state.available_moves.includes('CHECK')) {
+                if (privateInfo.available_moves.includes('CHECK')) {
                     checkBtn.classList.remove('hidden');
                 } else {
                     checkBtn.classList.add('hidden');
@@ -131,13 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 处理RAISE相关控件
-            const canRaise = state.available_moves.includes('RAISE');
-            updateRaiseControls(canRaise, state);
+            const canRaise = privateInfo.available_moves.includes('RAISE');
+            updateRaiseControls(canRaise, publicInfo, privateInfo);
 
             // 显示ALL IN按钮 - 始终显示，不再检查canAllIn
             allInBtn.classList.remove('hidden');
             // 只有在玩家没有足够筹码时禁用ALL IN按钮
-            const playerChips = state.players[state.current_player].stack;
+            const currentPlayer = privateInfo.current_player;
+            const playerChips = currentPlayer !== null ? publicInfo.players[currentPlayer].stack : 0;
             allInBtn.disabled = playerChips <= 0;
         } else {
             // 隐藏所有动作按钮，但保持ALL IN按钮可见
@@ -150,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 处理RAISE相关控件的函数
-    function updateRaiseControls(canRaise, state) {
+    function updateRaiseControls(canRaise, publicInfo, privateInfo) {
         // 显示或隐藏RAISE按钮和滑条
         if (canRaise) {
             raiseBtn.classList.remove('hidden');
@@ -162,18 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 只有当可以加注且有加注范围时才继续
-        if (state.raise_range) {
-            console.log('last_raise:', state.last_raise);
-            console.log('min_raise:', state.min_raise);
-            console.log('current_bet:', state.current_bet);
-            console.log('raise_range:', state.raise_range.min, state.raise_range.max);
-            console.log('chips_to_call:', state.chips_to_call);
+        if (privateInfo.raise_range) {
+            console.log('last_raise:', publicInfo.last_raise);
+            console.log('min_raise:', privateInfo.min_raise);
+            console.log('current_bet:', privateInfo.current_bet);
+            console.log('raise_range:', privateInfo.raise_range.min, privateInfo.raise_range.max);
+            console.log('chips_to_call:', privateInfo.chips_to_call);
 
-            const minRaiseTotal = state.raise_range.min;
-            const maxRaise = state.raise_range.max;
+            const minRaiseTotal = privateInfo.raise_range.min;
+            const maxRaise = privateInfo.raise_range.max;
 
             // 计算加注增量（超出跟注的部分）
-            const raiseIncrement = minRaiseTotal - state.current_bet;
+            const raiseIncrement = minRaiseTotal - privateInfo.current_bet;
 
             // 在Raise按钮上显示总金额和增量
             raiseBtn.textContent = `Raise to $${minRaiseTotal}(+$${raiseIncrement})`;
@@ -188,34 +205,44 @@ document.addEventListener('DOMContentLoaded', () => {
             maxRaiseLabel.textContent = `Max: $${maxRaise}`;
 
             // 使用服务器计算的底池比例加注值
-            if (state.pot_raise_values) {
+            if (privateInfo.pot_raise_values) {
                 // 定义底池比例按钮和对应的数据
                 const raiseButtons = [
-                    { button: raisePotThird, data: state.pot_raise_values.pot_third, label: '1/3 Pot' },
-                    { button: raisePotHalf, data: state.pot_raise_values.pot_half, label: '1/2 Pot' },
-                    { button: raisePotFull, data: state.pot_raise_values.pot_full, label: '1x Pot' },
-                    { button: raisePot2x, data: state.pot_raise_values.pot_2x, label: '2x Pot' }
+                    { button: raisePotThird, data: privateInfo.pot_raise_values.pot_third, label: '1/3 Pot' },
+                    { button: raisePotHalf, data: privateInfo.pot_raise_values.pot_half, label: '1/2 Pot' },
+                    { button: raisePotFull, data: privateInfo.pot_raise_values.pot_full, label: '1x Pot' },
+                    { button: raisePot2x, data: privateInfo.pot_raise_values.pot_2x, label: '2x Pot' }
                 ];
 
                 // 获取玩家筹码和禁用条件
-                const playerChips = state.players[state.current_player].stack;
-                const disableRaise = playerChips < minRaiseTotal;
+                const currentPlayer = privateInfo.current_player;
+                const playerChips = currentPlayer !== null ? publicInfo.players[currentPlayer].stack : 0;
 
-                // 设置ALL IN按钮
-                allInBtn.textContent = `All In ($${playerChips})`;
-                allInBtn.dataset.amount = maxRaise;
-
-                // 设置加注按钮状态
-                raiseBtn.disabled = disableRaise;
-                raiseSlider.disabled = disableRaise;
-
-                // 批量处理所有底池比例按钮
-                raiseButtons.forEach(({ button, data, label }) => {
-                    button.textContent = `${label} to $${data.total}(+$${data.increment})`;
-                    button.dataset.amount = data.total;
-                    button.classList.toggle('hidden', !data.valid);
-                    button.disabled = disableRaise || playerChips < data.total;
+                // 更新每个按钮的状态和文本
+                raiseButtons.forEach(item => {
+                    if (item.data.valid && item.data.total <= playerChips) {
+                        item.button.disabled = false;
+                        item.button.textContent = `${item.label} ($${item.data.total})`;
+                        item.button.dataset.raiseAmount = item.data.total;
+                    } else {
+                        item.button.disabled = true;
+                        item.button.textContent = `${item.label}`;
+                    }
                 });
+
+                // 启用滑动条
+                raiseSlider.disabled = false;
+
+                // 更新滑动条值变化事件
+                raiseSlider.oninput = function () {
+                    const value = parseInt(this.value);
+                    const increment = value - privateInfo.current_bet;
+                    raiseBtn.textContent = `Raise to $${value}(+$${increment})`;
+                    raiseBtn.dataset.raiseAmount = value;
+                };
+
+                // 设置初始加注金额
+                raiseBtn.dataset.raiseAmount = minRaiseTotal;
             }
         }
     }
@@ -266,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updatePlayers(players, state) {
+    function updatePlayers(players, publicInfo, privateInfo) {
         // 清空玩家容器
         const playersContainer = document.querySelector('.players-container');
         playersContainer.innerHTML = '';
@@ -275,12 +302,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Players state:', players.map(p => ({ id: p.id, state: p.state })));
 
         // u83b7u53d6u4f4du7f6eu4fe1u606f
-        const dealerPosition = state.dealer_position;
-        const smallBlindPosition = state.small_blind_position;
-        const bigBlindPosition = state.big_blind_position;
+        const dealerPosition = publicInfo.dealer_position;
+        const smallBlindPosition = publicInfo.small_blind_position;
+        const bigBlindPosition = publicInfo.big_blind_position;
 
         // u8ba1u7b97u6d3bu8dc3u73a9u5bb6u6570u91cf
-        const activePlayers = players.filter(player => player.state !== 'OUT');
         const playerCount = players.length; // u4f7fu7528u603bu73a9u5bb6u6570
 
         // u6dfbu52a0u73a9u5bb6
@@ -288,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const playerDiv = document.createElement('div');
             playerDiv.className = `player`;
 
-            const isCurrentPlayer = player.id === parseInt(state.current_player);
+            const isCurrentPlayer = player.id === parseInt(privateInfo.current_player);
             const isOutPlayer = player.state.includes('OUT');
             if (isCurrentPlayer) playerDiv.classList.add('active');
             if (isOutPlayer) playerDiv.classList.add('out');
@@ -297,10 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
             playerDiv.classList.add(`player-position-${playerCount}-${player.id}`);
 
             let handHtml = '';
-            if (player.hand && player.hand.length > 0) {
+            // 只有当前玩家才能看到手牌，使用privateInfo中的手牌信息
+            if (isCurrentPlayer && privateInfo.hand && privateInfo.hand.length > 0) {
                 handHtml = `
                     <div class="player-hand">
-                        ${player.hand.map(card => `
+                        ${privateInfo.hand.map(card => `
                             <div class="card ${card.color}">
                                 ${card.text}
                             </div>
@@ -568,38 +595,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function takeAction(actionType, amount = null) {
-        const requestBody = { action_type: actionType };
-
-        if (actionType === 'RAISE' && amount !== null) {
-            requestBody.amount = parseInt(amount);
+        // 构建请求数据
+        const data = { action_type: actionType };
+        if (amount !== null) {
+            data.amount = amount;
         }
 
+        // 发送动作请求
         fetch('/take_action', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(data)
         })
             .then(response => response.json())
             .then(result => {
                 if (result.error) {
-                    console.error(result.error);
+                    console.error("Error taking action:", result.error);
                     return;
                 }
 
-                // 处理手牌结束
-                if (result.hand_over && result.winners && result.winners.length > 0) {
-                    console.log('Hand over! Winners:', result.winners);
-                    console.log('Players cards:', result.players_cards);
-                    console.log('Pot amount:', result.pot);
-                    console.log('Board cards:', result.board);
-
-                    // 显示胜利动画
-                    showVictoryAnimation(result.winners, result.players_cards, result.pot, result.board);
-                }
-
+                // 更新游戏状态
                 updateGameState();
+
+                // 处理获胜者信息
+                if (result.winners) {
+                    // 获取所有玩家的手牌
+                    const playersCards = result.players_cards;
+                    // 获取底池金额
+                    const potAmount = result.pot;
+                    // 获取公共牌
+                    const boardCards = result.board;
+
+                    // 显示获胜动画
+                    showVictoryAnimation(result.winners, playersCards, potAmount, boardCards);
+                }
             });
     }
 
@@ -609,29 +640,21 @@ document.addEventListener('DOMContentLoaded', () => {
     checkBtn.addEventListener('click', () => takeAction('CHECK'));
     callBtn.addEventListener('click', () => takeAction('CALL'));
 
-    // 更新加注滑块改变时的显示金额
-    raiseSlider.addEventListener('input', (e) => {
-        const raiseAmount = parseInt(e.target.value);
-        const currentCallAmount = document.querySelector('.call-btn') ?
-            parseInt(document.querySelector('.call-btn').textContent.match(/\$(\d+)/)[1] || 0) : 0;
-        const raiseIncrement = raiseAmount - currentCallAmount;
-        // 显示总金额和增量
-        raiseBtn.textContent = `Raise to $${raiseAmount}(+$${raiseIncrement})`;
-    });
-
-    // RAISE按钮直接使用滑块的值
+    // RAISE按钮使用dataset中存储的金额
     raiseBtn.addEventListener('click', () => {
-        takeAction('RAISE', parseInt(raiseSlider.value));
+        const raiseAmount = parseInt(raiseBtn.dataset.raiseAmount);
+        takeAction('RAISE', raiseAmount);
     });
 
-    // 快捷加注按钮设置滑块值并更新显示
+    // 快捷加注按钮使用dataset中存储的金额
     const quickRaiseButtons = [raisePotThird, raisePotHalf, raisePotFull, raisePot2x];
     quickRaiseButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const amount = parseInt(button.dataset.amount);
-            raiseSlider.value = amount;
-            raiseBtn.textContent = `Raise ($${amount})`;
-            takeAction('RAISE', amount); // 
+            if (!button.disabled) {
+                const amount = parseInt(button.dataset.raiseAmount);
+                raiseSlider.value = amount;
+                takeAction('RAISE', amount);
+            }
         });
     });
 
