@@ -83,5 +83,6 @@ class OpenAILLMClient(BaseLLMClient):
     def parse_response(self, response) -> str:
         dict_resp = response.to_dict()
         # logger.debug(f"Response: {dict_resp}")
+        print()
         self.usage_summary(dict_resp["usage"])
         return dict_resp["choices"][0]["message"]["content"]

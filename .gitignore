@@ -1,4 +1,7 @@
 # Environment variables
+
+zartist/games/texasholdem/llm_agents.py
+
 .env
 texasholdem/
 play.py

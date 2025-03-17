@@ -181,6 +181,7 @@ def create_app(test_config=None):
                             'valid': raw_value >= min_raise - chips_to_call
                         }
 
+            print(f"final_staet: {state}")
             return jsonify(state)
         except Exception as e:
             logger.error(f"Error in get_game_state: {str(e)}")

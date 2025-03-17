@@ -1,7 +1,7 @@
 import os
 
 from zartist import logger
-from zartist.abc.clients import OpenAILLMClient
+from zartist.abc.client import OpenAILLMClient
 from zartist.utils.image_utils import process_image_reprs
 
 
