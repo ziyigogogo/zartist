@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+from zartist.utils import fn_timer
 from zartist import logger
 
 
@@ -7,6 +7,9 @@ class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
     default_system_prompt = "You are a helpful assistant."
+
+    def __init__(self, *args, **kwargs):
+        self.client = self.build_client()
 
     @abstractmethod
     def build_client(self) -> object:
@@ -34,12 +37,15 @@ class BaseLLMClient(ABC):
         raise NotImplementedError
 
     def query(self, *args, **kwargs):
-        self.client = self.build_client()
         messages = self.build_messages(*args, **kwargs)
         request = self.build_request(messages)
         response = self.send_request(request)
         result = self.parse_response(response)
         return result
+
+    @fn_timer()
+    def debug_query(self, *args, **kwargs):
+        return self.query(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         return self.query(*args, **kwargs)
@@ -83,6 +89,5 @@ class OpenAILLMClient(BaseLLMClient):
     def parse_response(self, response) -> str:
         dict_resp = response.to_dict()
         # logger.debug(f"Response: {dict_resp}")
-        print()
         self.usage_summary(dict_resp["usage"])
         return dict_resp["choices"][0]["message"]["content"]
