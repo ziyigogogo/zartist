@@ -15,12 +15,16 @@ class DeepSeekR1Client(OpenAILLMClient):
     prompt_price: float = 0.004
     completion_price: float = 0.016
 
-    def parse_response(self, response) -> str:
+    def parse_response(self, response, return_think=False) -> str:
         dict_resp = response.to_dict()
         think = dict_resp["choices"][0]["message"]["reasoning_content"]
         resp = dict_resp["choices"][0]["message"]["content"]
         self.usage_summary(dict_resp["usage"])
-        return think, resp
+        if return_think:
+            return think, resp
+        else:
+            logger.info(f"DeepSeek R1 think: {think}")
+            return resp
 
 
 if __name__ == "__main__":
