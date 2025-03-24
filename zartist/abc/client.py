@@ -1,14 +1,16 @@
 from abc import ABC, abstractmethod
 from zartist.utils import fn_timer
 from zartist import logger
+import inspect
 
 
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
-    default_system_prompt = "You are a helpful assistant."
-
     def __init__(self, *args, **kwargs):
+        attrs = {**{k: v for k, v in zip(inspect.getfullargspec(self.__init__).args[1:], args)}, **kwargs}
+        for k, v in attrs.items():
+            setattr(self, k, v)
         self.client = self.build_client()
 
     @abstractmethod
@@ -32,16 +34,16 @@ class BaseLLMClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse_response(self, response: dict) -> str:
-        """Parse LLM response to get answer text"""
+    def get_content(self, response: dict) -> str:
+        """Get answer text from LLM response"""
         raise NotImplementedError
 
     def query(self, *args, **kwargs):
         messages = self.build_messages(*args, **kwargs)
         request = self.build_request(messages)
         response = self.send_request(request)
-        result = self.parse_response(response)
-        return result
+        content = self.get_content(response, **kwargs)
+        return content
 
     @fn_timer()
     def debug_query(self, *args, **kwargs):
@@ -60,14 +62,13 @@ class OpenAILLMClient(BaseLLMClient):
         from openai import OpenAI
         return OpenAI(api_key=self.api_key, base_url=self.base_url)
 
-    def build_messages(self, prompt, history=None, system_prompt=None):
-        messages = [{"role": "system", "content": system_prompt or self.default_system_prompt}]
-        if history and isinstance(history, list) and all(isinstance(msg, dict) for msg in history):
-            if history[0].get("role", "") == "system":
-                messages = history
-            else:
-                messages += history
+    def build_messages(self, prompt, system=None, history=None, **kwargs):
+        system = system or "You are a helpful assistant."
+        messages = [{"role": "system", "content": system}]
+        if history:
+            messages = history if history[0].get("role", "") == "system" else messages + history
         messages.append({"role": "user", "content": [{"type": "text", "text": prompt}]})
+        print("messages", messages)
         return messages
 
     def build_request(self, messages: list[dict]) -> dict:
@@ -86,7 +87,7 @@ class OpenAILLMClient(BaseLLMClient):
             f"Prompt({prompt_tokens} tokens): ¥{prompt_cost:.4f}, Completion({completion_tokens} tokens): ¥{completion_cost:.4f}, Total: ¥{total_cost:.4f}"
         )
 
-    def parse_response(self, response) -> str:
+    def get_content(self, response, **kwargs) -> str:
         dict_resp = response.to_dict()
         # logger.debug(f"Response: {dict_resp}")
         self.usage_summary(dict_resp["usage"])

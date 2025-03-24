@@ -20,8 +20,8 @@ class QwenVLClient(OpenAILLMClient):
     prompt_price: float = 0.003
     completion_price: float = 0.009
 
-    def build_messages(self, prompt, image_reprs, history=None, system_prompt=None):
-        messages = super().build_messages(prompt, history, system_prompt)
+    def build_messages(self, prompt, image_reprs, system=None, history=None):
+        messages = super().build_messages(prompt=prompt, system=system, history=history)
         # load image
         for image in process_image_reprs(image_reprs):
             messages[-1]["content"].append({
@@ -39,7 +39,8 @@ class QwenVLClient(OpenAILLMClient):
 if __name__ == "__main__":
     client = QwenVLClient()
     # Test with a single image
-    llm_resp = client(system_prompt="你是一个嘴巴很贱但是心底善良的贴吧老哥，你会对用户的问题百般抨击，但是最后会得出回答",
-                      prompt="图中画了什么？最有可能的地点在世界上的哪个国家的哪个景区？",
-                      image_reprs="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")
+    llm_resp = client(
+        # system="你是一个嘴巴很贱但是心底善良的贴吧老哥，你会对用户的问题百般抨击，但是最后会得出回答",
+        prompt="图中画了什么？最有可能的地点在世界上的哪个国家的哪个景区？",
+        image_reprs="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")
     logger.debug(llm_resp)
