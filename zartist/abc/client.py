@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
 from zartist.utils import fn_timer
 from zartist import logger
-import inspect
+from zartist.utils.builtin_utils import args2kwargs
 
 
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients"""
 
     def __init__(self, *args, **kwargs):
-        attrs = {**{k: v for k, v in zip(inspect.getfullargspec(self.__init__).args[1:], args)}, **kwargs}
-        for k, v in attrs.items():
+        for k, v in args2kwargs(*args, **kwargs).items():
             setattr(self, k, v)
         self.client = self.build_client()
 
@@ -56,7 +55,7 @@ class BaseLLMClient(ABC):
 class OpenAILLMClient(BaseLLMClient):
     """Client for making requests to OpenAI format API"""
 
-    def build_client(self) -> object:
+    def build_client(self):
         if hasattr(self, "client") and self.client:
             return self.client
         from openai import OpenAI

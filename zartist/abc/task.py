@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import inspect
 
 from zartist.abc.client import BaseLLMClient
+from zartist.utils.builtin_utils import args2kwargs
 
 
 class BasePrompter(ABC):
@@ -13,8 +14,8 @@ class BasePrompter(ABC):
     def render(self, *args, **kwargs):
         prompt_template = inspect.getdoc(self)
         if prompt_template:
-            args_and_kwargs = {**{k: v for k, v in zip(inspect.getfullargspec(self.render).args[1:], args)}, **kwargs}
-            prompt = prompt_template.format(**args_and_kwargs)
+            all_kwargs = args2kwargs(*args, **kwargs)
+            prompt = prompt_template.format(**all_kwargs)
             return prompt
         raise ValueError("Prompt template not found")
 
@@ -27,8 +28,7 @@ class BaseTask(ABC):
     llm_client: BaseLLMClient = None
 
     def __init__(self, *args, **kwargs) -> None:
-        attrs = {**{k: v for k, v in zip(inspect.getfullargspec(self.__init__).args[1:], args)}, **kwargs}
-        for k, v in attrs.items():
+        for k, v in args2kwargs(*args, **kwargs).items():
             setattr(self, k, v)
         if not self.prompter or not isinstance(self.prompter, BasePrompter):
             raise ValueError("Prompter not initialized")
