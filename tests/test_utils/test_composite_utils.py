@@ -1,6 +1,4 @@
 import pytest
-from PIL import Image
-import pandas as pd
 
 from zartist.utils.composite_utils import str2obj
 from zartist.errors import StrParseError

@@ -1,5 +1,4 @@
 import base64
-import os
 import pytest
 from PIL import Image
 import io

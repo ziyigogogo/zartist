@@ -1,5 +1,5 @@
 import pytest
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import json
 
 from zartist.utils.visualization_utils import parse_json_output, draw_bounding_boxes, COLORS
@@ -43,8 +43,6 @@ More text'''
 def test_draw_bounding_boxes(sample_image, sample_boxes):
     """Test draw_bounding_boxes function"""
     # Create a temporary font file for testing
-    import tempfile
-    import os
 
     # Test basic functionality
     result = draw_bounding_boxes(sample_image,

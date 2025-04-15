@@ -20,7 +20,7 @@ def str2obj(s: str, target_type="auto"):
                             return str2obj(s, t)
                         except Exception:
                             continue
-                    raise TypeError(f"Failed to parse any supported type")
+                    raise TypeError("Failed to parse any supported type")
             case "dict":
                 return str2dict(s)
             case "pil":

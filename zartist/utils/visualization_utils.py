@@ -3,8 +3,6 @@ Visualization utilities for displaying bounding boxes, points, and other annotat
 """
 
 import ast
-import json
-from typing import Dict, List, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 

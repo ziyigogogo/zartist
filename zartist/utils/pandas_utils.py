@@ -1,9 +1,8 @@
 import pandas as pd
-
 from zartist.errors import StrParseError
 
 
-def str2df(s: str) -> "pandas.DataFrame":
+def str2df(s: str):
     """从字符串中提取DataFrame对象"""
     file_ext = s.split('.')[-1].lower()
     try:
@@ -22,6 +21,6 @@ def str2df(s: str) -> "pandas.DataFrame":
                         raise TypeError(f"Unsupported file extension: {file_ext}")
             except UnicodeDecodeError:
                 continue
-        raise TypeError(f"Failed to parse DataFrame in any encoding")
+        raise TypeError("Failed to parse DataFrame in any encoding")
     except Exception as e:
         raise StrParseError(s, f"@str2df: an error occurred: {e}")

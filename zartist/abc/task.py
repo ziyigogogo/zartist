@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import inspect
 
 from zartist.abc.client import BaseLLMClient

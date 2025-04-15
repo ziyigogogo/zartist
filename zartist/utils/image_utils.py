@@ -10,14 +10,14 @@ from zartist.errors import StrParseError
 from zartist import logger
 
 
-def load_image(data: bytes) -> "PIL.Image.Image":
+def load_image(data: bytes):
     buffer = io.BytesIO(data)
     img = Image.open(buffer)
     img.verify()  # Verify it's an image
     return Image.open(buffer)  # Reopen the image
 
 
-def str2pil(s: str) -> "PIL.Image.Image":
+def str2pil(s: str):
     """从字符串中提取图像对象"""
 
     try:
@@ -35,7 +35,7 @@ def str2pil(s: str) -> "PIL.Image.Image":
         raise StrParseError(s, f"@str2pil: an error occurred: {e}")
 
 
-def pil2b64(img: "PIL.Image.Image", format: str = "PNG") -> str:
+def pil2b64(img, format: str = "PNG") -> str:
     """Convert PIL Image to base64 string
 
     Args:
